@@ -1,0 +1,1338 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+
+    "sa" : {
+        "type" : "string",
+        "description" : "IP Source Address, as a string. It MAY be in dotted quad notation, e.g. \"10.0.2.15\", or it MAY be an arbitrary hexadecimal JSON string, which will be the case when anonymization is used."
+    },
+
+    "da" : {
+        "type" : "string",
+        "description" : "IP Destination Address, as a string. Its format is identical to the IP Source Address."
+	},
+	    
+    "pr" : {
+        "type" : "number",
+        "description" : "IP Protocol number, as a JSON number. 6=tcp, 17=udp, and so on."
+   },
+
+    "sp" : {
+        "type" : "number",
+        "description" : "TCP or UDP Source Port, as a JSON number."
+   },
+
+    "dp" : {
+        "type" : "number",
+        "description" : "TCP or UDP Destination Port, as a JSON number."
+   },
+           
+    "bytes_out" : {
+        "type" : "number",
+        "description" : "Number of bytes in TCP,UDP,ICMP or IP **DATA FIELDS** of outbound (source to destination) traffic, as a JSON number."
+    },
+    
+    "num_pkts_out" : {
+        "type" : "number",
+        "description" : "Number of packets of outbound (source to destination) traffic, as a JSON number."    
+    },
+    
+    "bytes_in" : {
+        "type" : "number",
+        "description" : "Number of bytes of inbound (destination to source) traffic, as a JSON number."       
+    },
+    
+    "num_pkts_in" : {
+        "type" : "number",
+        "description" : "Number of packets of inbound (destination to source) traffic, as a JSON number."      
+    },
+    
+    "time_start" : {
+        "type" : "number",
+        "description" : "Start time of the flow expressed as the number of seconds since the epoch (00:00:00 UTC, Thursday, 1 January 1970), as a JSON number. It SHOULD include a decimal part, and provide at least millisecond precision, e.g. 1411732528.590115"       
+    },
+    
+    "time_end" : {
+        "type" : "number",
+        "description" : "End time of the flow expressed in the same way as the start time."     
+    },
+    
+    "packets" : {
+        "type" : "array",
+        "items" : {
+            "type" : "object",
+            "properties" : {
+                "b" : {
+                    "type" : "number",
+                    "description" : "bytes in data field, data field of which kind depends on the pr, for example,if the pr is 17, it denotes bytes in UDP Data field, if the pr is null, it denotes bytes in IP Data field"
+                },
+                "dir" : {
+                    "type" : "string"
+                },
+                "ipt" : {
+                    "type" : "number"
+                }
+            }
+        },
+        "description" : "A JSON array of packet objects. Each packet object contains the number of bytes of data in the packet, expressed as the JSON number \"b\", the JSON string \"<\" or \">\" to indicate inbound or outbound directions, respectively, and the number of milliseconds between the arrival of this packet and the previous packet, expressed as the JSON number \"ipt\". An example of a packet object is {\"b\": 873, \"dir\": \">\", \"ipt\": 121 }.  The old name for this element is \"non_norm_stats\"."
+    },
+
+    "byte_dist" : {
+        "type" : "array",
+        "items" : {"type" : "number"},
+        "description" : "Byte Distribution"        
+    },
+    
+    "byte_dist_mean" : {
+        "type" : "number"
+    },
+    
+    "byte_dist_std" : {
+        "type" : "number"
+    },
+    
+    "entropy" : {
+        "type" : "number",
+        "description" : " entropy is the entropy in bits per byte; this is the empirical entropy computed from the empirical probability distribution over the bytes. This number ranges from zero to 8."
+    },
+    
+    "total_entropy" : {
+        "type" : "number",
+        "description" : " total entropy is total entropy, in bytes, over all of the bytes in the ﬂow. This number ranges from zero to 8n, where n is bytes out for unidirectional ﬂows, and is bytes out plus bytes in for bidirectional ﬂows."
+    },
+    
+    "p_malware" : {
+        "type" : "number",
+        "description" : "probability of malware?"
+    },
+    
+    // # ip json
+    "ip" : {
+        "type" : "object",
+        "properties" : {
+            "out" : {
+                "type" : "object",
+                "properties" : {
+                    "ttl" : {
+                        "type" : "number",
+                        "description" : "smallest ip ttl in flow"
+                    },
+                    "id" : {
+                        "type" : "array",
+                        "items" : {
+                            "type" : "number"
+                        },
+                        "description" : "array of ip ids in flow, the maximum number of IP ID fields is 50 in joy"
+                    }
+                }
+            },
+            "in" : {
+                "type" : "object",
+                "description" : "only have this field if the flow is bidirectional" ,
+                "properties" : {
+                    "ttl" : {
+                        "type" : "number",
+                        "description" : "smallest ip ttl in flow"
+                    },
+                    "id" : {
+                        "type" : "array",
+                        "items" : {
+                            "type" : "number"
+                        },
+                        "description" : "array of ip ids in flow, the maximum number of IP ID fields is 50 in joy"
+                    }
+                }
+            } 
+        }
+    },
+
+    "tcp" : {
+        "type" : "object",
+        "description" : "exist only if the pr field is equal as 6",
+        "properties" : {
+            "first_seq" : {
+                "type" : "number",
+                "description" : "2 first_seqs is possible"
+            },
+    	    "out" : {
+                "type" : "object",
+                "properties" : {
+                    "flags" : {
+                        "type" : "string"
+                    },
+    	            "first_window_size" : {
+                        "type" : "number"
+                    },
+    	            "opt_len" : {
+                        "type" : "number"
+                    },
+                    "opts" : {
+                        "type" : "array",
+                        "items" : {
+                            "type" : "object",
+                            "oneof" :[ 
+                                {
+                                    "malformed" : {
+                                        "type" : "object",
+                                        "description" : "malformed data, if (single option length > tcp totaol option length), properties does not have \"data\" filed and this object must be last one in the opts array, else if the option is one of (NOP, MSS, WS, SACKP) but the option data lenght is wrong, properties does have all fields, other malformed option situation, properties does not have field length" ,
+                                        "properties" : {
+                                            "kind" : {
+                                                "type" : "number"
+                                            },
+                                            "data" : {
+                                                "type" : "string"
+                                            },
+                                            "len" : {
+                                                "type" : "number"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "sackp": { 
+                                        "type": "null",
+                                        "description" : "SACK permitted"
+                                    }
+                                },
+                                {
+                                    "mss": { 
+                                        "type": "integer",
+                                        "description" : "maximum segment size"
+                                    } 
+                                },
+                                {
+                                    "ts": { 
+                                        "required": [ "ecr", "val" ], 
+                                        "type": "object", 
+                                        "description" : "timestamps",
+                                        "properties": { 
+                                            "ecr": { 
+                                                "type": "integer" 
+                                            }, 
+                                            "val": { 
+                                                "type": "integer" 
+                                            } 
+                                        } 
+                                    }
+                                },
+                                {
+                                    "noop": { 
+                                        "type": "null" ,
+                                        "description" : "No-Operation"
+                                    }
+                                },
+                                {
+                                    "ws": { 
+                                        "type": "integer",
+                                        "description" : "window scale"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "in" : {
+                "type" : "object",
+                "properties" : {
+                    "flags" : {
+                        "type" : "string"
+                    },
+    	            "first_window_size" : {
+                        "type" : "number"
+                    },
+    	            "opt_len" : {
+                        "type" : "number"
+                    },
+                    "opts" : {
+                        "type" : "array",
+                        "items" : {
+                            "type" : "object",
+                            "oneof" :[ 
+                                {
+                                    "malformed" : {
+                                        "type" : "object",
+                                        "description" : "malformed data, if (single option length > tcp totaol option length), properties does not have \"data\" filed and this object must be last one in the opts array, else if the option is one of (NOP, MSS, WS, SACKP) but the option data lenght is wrong, properties does have all fields, other malformed option situation, properties does not have field length" ,
+                                        "properties" : {
+                                            "kind" : {
+                                                "type" : "number"
+                                            },
+                                            "data" : {
+                                                "type" : "string"
+                                            },
+                                            "len" : {
+                                                "type" : "number"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "sackp": { 
+                                        "type": "null",
+                                        "description" : "SACK permitted"
+                                    }
+                                },
+                                {
+                                    "mss": { 
+                                        "type": "integer",
+                                        "description" : "maximum segment size"
+                                    } 
+                                },
+                                {
+                                    "ts": { 
+                                        "required": [ "ecr", "val" ], 
+                                        "type": "object", 
+                                        "description" : "timestamps",
+                                        "properties": { 
+                                            "ecr": { 
+                                                "type": "integer" 
+                                            }, 
+                                            "val": { 
+                                                "type": "integer" 
+                                            } 
+                                        } 
+                                    }
+                                },
+                                {
+                                    "noop": { 
+                                        "type": "null" ,
+                                        "description" : "No-Operation"
+                                    }
+                                },
+                                {
+                                    "ws": { 
+                                        "type": "integer",
+                                        "description" : "window scale"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }      
+    },
+
+    "## TCP FEATURE":
+    "# Sequence of Application Lengths and Times (SALT)",
+    "oseq" : {
+        "type" : "array",
+        "items" : {
+            "type" : "number"
+        }
+    },
+    "oack" : {
+        "type" : "array",
+        "items" : {
+            "type" : "number"
+        }
+    },
+    "iseq" : {
+        "type" : "array",
+        "items" : {
+            "type" : "number"
+        }
+    },
+    "iack" : {
+        "type" : "array",
+        "items" : {
+            "type" : "number"
+        }
+    },
+
+    
+    // # Per-Packet Information(ppi)
+    "ppi" : {
+        "type" : "array",
+        "items" : {
+            "type" : "object",
+            "properties" : {
+                "seq" : {
+                    "type" : "number"
+                },
+                "ack" : {
+                    "type" : "number",
+                    "description" : ""
+                },
+                "rseq" : {
+                    "type" : "number",
+                    "description" : "relative sequence number" 
+                },
+                "rack" : {
+                    "type" : "number",
+                    "description" : "relative ack number"
+                },
+                "b" : {
+                    "type" : "number",
+                    "description" : "number of bytes in data field "
+                },
+                "olen" : {
+                    "type" : "number",
+                    "description" : "option length"
+                },
+                "dir" : {
+                    "type" : "string"
+                },
+                "t" : {
+                    "type" : "number",
+                    "description" : "time since start of flow" 
+                },
+                "flags" : {
+                    "type" : "string"
+                },
+                "opts" : {
+                    "type" : "array",
+                    "items" : {
+                        "type" : "object",
+                        "oneof" :[ 
+                            {
+                                "malformed" : {
+                                    "type" : "object",
+                                    "description" : "malformed data, if (single option length > tcp totaol option length), properties does not have \"data\" filed and this object must be last one in the opts array, else if the option is one of (NOP, MSS, WS, SACKP) but the option data lenght is wrong, properties does have all fields, other malformed option situation, properties does not have field length" ,
+                                    "properties" : {
+                                        "kind" : {
+                                            "type" : "number"
+                                        },
+                                        "data" : {
+                                            "type" : "string"
+                                        },
+                                        "len" : {
+                                            "type" : "number"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "sackp": { 
+                                    "type": "null",
+                                    "description" : "SACK permitted"
+                                }
+                            },
+                            {
+                                "mss": { 
+                                    "type": "integer",
+                                    "description" : "maximum segment size"
+                                } 
+                            },
+                            {
+                                "ts": { 
+                                    "required": [ "ecr", "val" ], 
+                                    "type": "object", 
+                                    "description" : "timestamps",
+                                    "properties": { 
+                                        "ecr": { 
+                                            "type": "integer" 
+                                        }, 
+                                        "val": { 
+                                            "type": "integer" 
+                                        } 
+                                    } 
+                                }
+                            },
+                            {
+                                "noop": { 
+                                    "type": "null" ,
+                                    "description" : "No-Operation"
+                                }
+                            },
+                            {
+                                "ws": { 
+                                    "type": "integer",
+                                    "description" : "window scale"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    
+    // # FingerPrint eXtraction (fpx)
+    "frinterprints" : {
+        "type" : "object",
+        "properties" : {
+            "tcp" : {
+                "type" : "string"
+            },
+            "tls" : {
+                "type" : "string"
+            }
+        }
+    },
+
+
+    // ## PAYLOAD FEATURE
+    // # wht
+    "wht" : {
+        "type" : "array",
+        "items" : {
+            "type" : "number"
+        }
+    },
+
+    
+    "dns" : {
+        "type" : "array",
+        "items": {
+            "type" : "object",
+            "properties" : {
+                "malformed" : {
+                    "type" : "number",
+                    "description" : "if this property occurs, no any other properties"
+                },
+                "qn" : {
+                   "type" : "string",
+                   "description" : "either \"qn\" or \"rn\" in an array element  "
+                },
+                "rn" : {
+                   "type" : "string"
+                },
+                "rc" : {
+                   "type" : "integer"
+                },
+                "rr" : {
+                   "type" : "array",
+                   "items" : {
+                       "type" : "object",
+                       "properities" : {
+                           "malformed" : {
+                               "type" : "integer",
+                               "description": "if this properity exist, any other properties must not exist in an rr array element"
+                           },
+                           "a" : {
+                               "type" : "string"
+                           },
+                           "aaaa" : {
+                               "type" : "string"
+                           },
+                           "soa" : {
+                            "type" : "string"
+                            },
+                            "ptr" : {
+                                "type" : "string"
+                            },
+                            "ns" : {
+                                "type" : "string"
+                            },
+                            "mx" : {
+                                "type" : "string"
+                            },
+                            "cname" : {
+                                "type" : "string"
+                            },
+                            "txt" : {
+                                "type" : "string"
+                            },
+                            "type" : {
+                                "type" : "hex",
+                                "description" : ""
+                            },
+                            "class" : {
+                                "type" : "hex"
+                            },
+                            "rdlength" : {
+                                "type" : "integer"
+                            },
+                           "ttl" : {
+                               "type" : "integer"
+                           }
+                       }
+                   }
+                }
+            }            
+        }
+    },
+
+    "ssh" : {
+        "type" : "object",
+        "properties" : {
+            "cli": {
+                "type" : "object",
+                "properties" : {
+                    "protocol" : {
+                        "type" : "string"
+                    },
+                    "cookie" : {
+                        "type" :  "string"
+                    },
+                    "kex_alogs" : {
+                        "type" :  "string"
+                    },
+                    "s_host_key_algos" : {
+                        "type" :  "string"
+                    },
+                    "c_encryption_algos" : {
+                        "type" :  "string"
+                    },
+                    "s_encryption_algos" : {
+                        "type" :  "string"
+                    },
+                    "c_mac_algos" : {
+                        "type" :  "string"
+                    }, 
+                    "s_mac_algos" : {
+                        "type" :  "string"
+                    },
+                    "c_comp_algos" : {
+                        "type" :  "string"
+                    },
+                    "s_comp_algos" : {
+                        "type" :  "string"
+                    },
+                    "c_languages" : {
+                        "type" :  "string"
+                    },
+                    "s_languages" : {
+                        "type" :  "string"
+                    },
+                    "kex_algo" : {
+                        "type" :  "string"
+                    },
+                    "c_kex" : {
+                        "type" :  "string"
+                    },
+                    "newkeys" : {
+                        "type" :  "string"
+                    },
+                    "unencrypted" : {
+                        "type" :  "string"
+                    }
+                }
+            }
+        
+            "srv" : {
+                "type" : "object",
+                "properties" : {
+                    "protocol" : {
+                        "type" :  "string"
+                    },
+                    "coolie" : {
+                        "type" :  "string"
+                    },
+                    "kex_alogs" : {
+                        "type" :  "string"
+                    },
+                    "s_host_key_algos" : {
+                        "type" :  "string"
+                    },
+                    "c_encryption_algos" : {
+                        "type" :  "string"
+                    },
+                    "s_encryption_algos" : {
+                        "type" :  "string"
+                    },
+                    "c_mac_algos" : {
+                        "type" :  "string"
+                    }, 
+                    "s_mac_algos" : {
+                        "type" :  "string"
+                    },
+                    "c_comp_algos" : {
+                        "type" :  "string"
+                    },
+                    "s_comp_algos" : {
+                        "type" :  "string"
+                    },
+                    "c_languages" : {
+                        "type" :  "string"
+                    },
+                    "s_languages" : {
+                        "type" :  "string"
+                    },
+                    "s_hostkey_type" : {
+                        "type" :  "string"
+                    },
+                    "s_hostkey" : {
+                        "type" :  "string"
+                    },
+                    "s_signature_type" : {
+                        "type" :  "string"
+                    },
+                    "key_algo" : {
+                        "type" :  "string"
+                    },
+                    "s_key" : {
+                        "type" :  "string"
+                    },
+                    "s_gen_p" : {
+                        "type" :  "string"
+                    },
+                    "s_gen_g" : {
+                        "type" :  "string"
+                    },
+                    "newkeys" : {
+                        "type" :  "string"
+                    },
+                    "unencrypted" : {
+                        "type" :  "string"
+                    }
+                }
+                
+            }
+        }
+    },
+
+    "tls" : {
+        "type" : "object",
+        "properties" : {
+            "c_version" : {
+                "type" : "number",
+                "description" : "TLS version"
+            },
+            "s_version" : {
+                "type" : "number"
+            },
+            "c_key_length" : {
+                "type" : "number",
+                "description" : "clientKeyExchange key length"
+            },
+            "c_key_exchange" : {
+                "type" : "string",
+                "description" : "clientKeyExchange data"
+            },
+            "c_random" : {
+                "type" : "string",
+                "description" : "Random field from hello"
+            },
+            "s_random" : {
+                "type" : "string"
+            },
+            "c_sid" : {
+                "type" : "string",
+                "description" : "Session ID"
+            },
+            "s_sid" : {
+                "type" : "string"
+            },
+            "sni" : {
+                "type" : "array",
+                "description" : "SNI a.k.a Server name indication",
+                "items" : {
+                    "type" : "string"
+                }
+            },
+            "scs" : {
+                "type" : "number",
+                "description" : "Ciphersuites"
+            },
+            "cs" : {
+                "type" : "array",
+                "items" : {
+                    "type" : "number"
+                }
+            },
+            "c_extensions" : {
+                "type" : "array",
+                "items" : {
+                    "type" : "object",
+                    "properties" : {
+                        "#extension_name#" : {
+                            "type" : "string"
+                        }
+                    }
+                }
+            },
+            "s_extensions" : {
+                "type" : "array",
+                "items" : {
+                    "type" : "object",
+                    "properties" : {
+                        "#extension_name#" : {
+                            "type" : "string"
+                        }
+                    }
+                }
+            },
+            "fingerprint_labels" : {
+                "type" : "array",
+                "items" : {
+                    "type" : "string"
+                }
+            },
+            "c_cert" : {
+                "type" : "array",
+                "description" : "X.509 certificates",
+                "items" : {
+                    "type" : "object",
+                    "properties" : {
+                        "length" : {
+                            "type" : "number",
+                            "description" : "length of X.509 certificate"
+                        },
+                        "serial_number" : {
+                            "type" : "string"
+                        },
+                        "signature" : {
+                            "type" : "string"
+                        },
+                        "signature_algo" : {
+                            "type" : "string"
+                        },
+                        "signature_key_size" : {
+                            "type" : "number",
+                            "description" : "Length of the signature key in bits"
+                        },
+                        "issuer" : {
+                            "type" : "array",
+                            "description" : "Array of item entries corresponding to the issuer information",
+                            "items" : {
+                                "type" : "object",
+                                "properties" : {
+                                    "#issuer_id#" : {
+                                        "type" : "string"
+                                    }
+                                }
+                            }
+                        },
+                        "subject" : {
+                            "type" : "array",
+                            "description" : "Array of item entries corresponding to the subject information",
+                            "items" : {
+                                "type" : "object",
+                                "properties" : {
+                                    "#subject_id#" : {
+                                        "type" : "string"
+                                    }
+                                }
+                            }
+                        },
+                        "extensions" : {
+                            "type" : "array",
+                            "description" : "Array of item entries corresponding to the extension information",
+                            "items" : {
+                                "type" : "object",
+                                "properties" : {
+                                    "#extension_id#" : {
+                                        "type" : "string"
+                                    }
+                                }
+                            }
+                        },
+                        "validity_not_before" : {
+                            "type" : "string"
+                        },
+                        "validity_not_after" : {
+                            "type" : "string"
+                        },
+                        "subject_public_key_algo" : {
+                            "type" : "string",
+                            "description" : "Subject public key algorithm (string)"
+                        },
+                        "subject_public_key_size" : {
+                            "type" : "number"
+                        }
+                    }
+                }
+            },
+            "s_cert" : {
+                "type" : "array",
+                "items" : {
+                    "type" : "object",
+                    "properties" : {
+                        "length" : {
+                            "type" : "number"
+                        },
+                        "serial_number" : {
+                            "type" : "string"
+                        },
+                        "signature" : {
+                            "type" : "string"
+                        },
+                        "signature_algo" : {
+                            "type" : "string"
+                        },
+                        "signature_key_size" : {
+                            "type" : "number"
+                        },
+                        "issuer" : {
+                            "type" : "array",
+                            "items" : {
+                                "type" : "object",
+                                "properties" : {
+                                    "#issuer_id#" : {
+                                        "type" : "string"
+                                    }
+                                }
+                            }
+                        },
+                        "subject" : {
+                            "type" : "array",
+                            "items" : {
+                                "type" : "object",
+                                "properties" : {
+                                    "#subject_id#" : {
+                                        "type" : "string"
+                                    }
+                                }
+                            }
+                        },
+                        "extensions" : {
+                            "type" : "array",
+                            "items" : {
+                                "type" : "object",
+                                "properties" : {
+                                    "#extension_id#" : {
+                                        "type" : "string"
+                                    }
+                                }
+                            }
+                        },
+                        "validity_not_before" : {
+                            "type" : "string"
+                        },
+                        "validity_not_after" : {
+                            "type" : "string"
+                        },
+                        "subject_public_key_algo" : {
+                            "type" : "string"
+                        },
+                        "subject_public_key_size" : {
+                            "type" : "number"
+                        }
+                    }
+                }
+            },
+            "srlt" : {
+                "type" : "array",
+                "items" : {
+                    "type" : "object",
+                    "properties" : {
+                        "b" : {
+                            "type" : "number"
+                        },
+                        "dir" : {
+                            "type" : "string"
+                        },
+                        "ipt" : {
+                            "type" : "number"
+                        },
+                        "tp" : {
+                            "type" : "number",
+                            "description" : "content type"
+                        },
+                        "hs_types" : {
+                            "type" : "array",
+                            "description" : "handshake type",
+                            "items" : {
+                                "type" : "number"
+                            }
+                        },
+                        "hs_lens" : {
+                            "type" : "array",
+                            "items" : {
+                                "type" : "number"
+                            }
+                        }
+                    }
+                }
+            }  
+        }   
+    },
+
+    // # dhcp
+    "dncp" : {
+        "type" : "array",
+        "items" : {
+            "type" : "object",
+            "properties" : {
+                "op" : {
+                    "type" : "number",
+                    "description" : ""
+                },
+                "htype" : {
+                    "type" : "number",
+                    "description" : "Hardware address type"
+                },
+                "hlen" : {
+                    "type" : "number",
+                    "description" : "Hardware address length"
+                },
+                "hops" : {
+                    "type" : "number",
+                    "description" : "Number of relay hops"
+                },
+                "xid" : {
+                    "type" : "number",
+                    "description" : "Transaction ID"
+                },
+                "secs" : {
+                    "type" : "number",
+                    "description" : "Seconds since client began exchange"
+                },
+                "flags" : {
+                    "type" : "number",
+                    "description" : "Flags"
+                },
+                "ciaddr" : {
+                    "type" : "string",
+                    "description" : "Client IP address"
+                },
+                "yiaddr" : {
+                    "type" : "string",
+                    "description" : "IP address offered to client"
+                },
+                "siaddr" : {
+                    "type" : "string",
+                    "description" : "Server IP address"
+                },
+                "giaddr" : {
+                    "type" : "string",
+                    "description" : "Gateway IP address"
+                },
+                "chaddr" : {
+                    "type" : "string",
+                    "description" : "Client hardware (MAC) address"
+                },
+                "sname" : {
+                    "type" : "string",
+                    "description" : "Optional server host name string"
+                },
+                "file" : {
+                    "type" : "string",
+                    "description" : "Boot file name string"
+                },
+                "options" : {
+                    "type" : "array",
+                    "description" : "",
+                    "items" : {
+                        "type" : "object",
+                        "properties" : {
+                            "#opt_str#" : {
+                                "type" : "string",
+                                "description" : "#opt-str# denotes the dhcp option string"
+                            },
+                            "kind" : {
+                                "type" : "number",
+                                "description" : "the code of unknown option"
+                            },
+                            "data" : {
+                                "type" : "string",
+                                "description" : "the data of unknown option,print data if the length of unknow option data isn't 0"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+
+    // # dncpv6
+    "dhcpv6" : {
+        "type" : "array",
+        "items" : {
+            "type" : "object",
+            "properties" : {
+                "type" : {
+                    "type" : "string"
+                },
+                "transid" : {
+                    "type" : "number"
+                },
+                "option" : {
+                    "type" : "string"
+                },
+                "optlen" : {
+                    "type" : "number"
+                },
+                "macaddr" : {
+                    "type" : "string"
+                }
+            }
+        }
+    },
+
+    // # http
+    "http" : {
+        "type" : "array",
+        "items" : {
+            "type" : "object",
+            "properties" : {
+                "out" : {
+                    "type" : "array",
+                    "items" : {
+                        "type" : "object"
+                    },
+                    "description" : "object include (({version}, {code}, {reason}) || ({method}, {url}, {version}, {usenames})) &&  other header && {body} "   
+                },
+                "in" : {
+                    "type" : "array",
+                    "items" : {
+                        "type" : "object",
+                        "properties" : {
+                            "-header_name-" : {
+                                "type" : "string||object"
+                            }
+                        },
+                        "description" : "header_name include ((version, code, reasion) || (method, url, version, usenames)) &&  other header && body "
+                    }
+                }
+            }
+        }
+    },
+
+    // # Internet Key Exchange(ike)
+    "ike" : {
+        "type" : "object",
+        "properties" : {
+            "init" : {
+                "type" : "object",
+                "properties" : {
+                    "messages" : {
+                        "type" : "array",
+                        "items" : {
+                            "type" : "object",
+                            "properties" : {
+                                "header" : {
+                                    "type" : "object",
+                                    "properties" : {
+                                        "init_spi" : {
+                                            "type" : "string"
+                                        },
+                                        "resp_spi" : {
+                                            "type" : "string"
+                                        },
+                                        "major" : {
+                                            "type" : "number"
+                                        }    ,
+                                        "minor" : {
+                                            "type" : "number"
+                                        },
+                                        "exchange_type" : {
+                                            "type" : "string || number"
+                                        },
+                                        "flags" : {
+                                            "type" : "object",
+                                            "properties" : {
+                                                "hex" : {
+                                                    "type" : "string"
+                                                },
+                                                "parsed" : {
+                                                    "type" : "array",
+                                                    "items" : {
+                                                        "type" : "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "message_id" : {
+                                            "type" : "number"
+                                        },
+                                        "length" : {
+                                            "type" : "number"
+                                        }            
+                                    }
+                                },
+                                "payloads" : {
+                                    "type" : "array",
+                                    "items" : {
+                                        "type" : "object",
+                                        "properties" : {
+                                            "#type_name#" : {
+                                                "type" : "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "resp" : {
+                "type" : "object",
+                "properties" : {
+                    "messages" : {
+                        "type" : "array",
+                        "items" : {
+                            "type" : "object",
+                            "properties" : {
+                                "header" : {
+                                    "type" : "object",
+                                    "properties" : {
+                                        "init_spi" : {
+                                            "type" : "string"
+                                        },
+                                        "resp_spi" : {
+                                            "type" : "string"
+                                        },
+                                        "major" : {
+                                            "type" : "number"
+                                        }    ,
+                                        "minor" : {
+                                            "type" : "number"
+                                        },
+                                        "exchange_type" : {
+                                            "type" : "string || number"
+                                        },
+                                        "flags" : {
+                                            "type" : "object",
+                                            "properties" : {
+                                                "hex" : {
+                                                    "type" : "string"
+                                                },
+                                                "parsed" : {
+                                                    "type" : "array",
+                                                    "items" : {
+                                                        "type" : "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "message_id" : {
+                                            "type" : "number"
+                                        },
+                                        "length" : {
+                                            "type" : "number"
+                                        }            
+                                    }
+                                },
+                                "payloads" : {
+                                    "type" : "array",
+                                    "items" : {
+                                        "type" : "object",
+                                        "properties" : {
+                                            "-type_name-" : {
+                                                "type" : "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+
+    // # payload
+    "payload" : {
+        "type" : "object",
+        "description" : " report the initial (up to) 32 bytes of the Data ﬁeld of the initial data packet",
+        "properties" : {
+            "out" : {
+                "type" : "string"
+            },
+            "in" : {
+                "type" : "string"
+            }
+        }
+    } ,
+     
+    "exe" : {
+        "type" : "object",
+        "description" : " include information about host process associated with ﬂow. This information is only available when joy is run on the host for that process.",
+        "properties" : {
+            "name" : {
+                "type" : "string",
+                "description" : "executable associated with flow"
+            },
+            "path" : {
+                "type" : "string",
+                "description" : "executable path associated with flow"
+            },
+            "version" : {
+                "type" : "string",
+                "description" : "executable version associated with flow"
+            },
+            "hash" : {
+                "type" : "string",
+                "description" : "executable file hash associated with flow"
+            },
+            "uptime" : {
+                "type" : "number",
+                "description" : "executable uptime associated with flow"
+            }
+        }
+        
+    },
+     
+    "hd" : {
+        "type" : "object",
+        "description" : " a header description summary",
+        "properties" : {
+            "n" : {
+                "type" : "number",
+                "description" : "number of headers"
+            },
+            "cm" : {
+                "type" : "number",
+                "description" : "const mask"
+            },
+            "cv" : {
+                "type" : "number",
+                "description" : "const value"
+            },
+            "sm" : {
+                "type" : "number",
+                "description" : "seq mask"
+            },
+            "i" : {
+                "type" : "number",
+                "description" : "initial"
+            }
+        }      
+    },
+     
+    "probable_os" : {
+        "type" : "object",
+        "properties" : {
+            "out" : {
+                "type" : "string",
+                "description" : "The operating system associated with the source address, as a JSON string." 
+            },
+            "in" : {
+                "type" : "string",
+                "description" : "The operating system associated with the destination address, as a JSON string."                   
+            }
+        }    
+     },
+     
+    //  # initial data packet (IDP)
+    "idp_out" : {
+        "type" : "string",
+        "description" : "The outbound initial data packet, including the IP header and all layers above it, expressed as a hexadecimal value in a JSON string.  For example, \"oidp\": 450000300268000080019758ac1047ebac1001010000a8e214180000e8d27a99d108000000000000000000001090fdff."       
+    },
+    "idp_len_out" : {
+        "type" : "number",
+        "description" : "The number of bytes in the outbound initial data packet."           
+    },
+    "idp_in" : {
+        "type" : "string",
+        "description" : "The inbound initial data packet, including the IP header and all layers above it, expressed as a hexadecimal value in a JSON string."       
+    },
+    "idp_len_in" : {
+        "type" : "number",
+        "description" : "The number of bytes in the inbound initial data packet."
+    },
+     
+    "debug" : {
+        "type" : "object",
+        "properties" : {
+            "tcp_retrans" : {
+                "type" : "number",
+                "description" : "TCP retransmissions"
+            },
+            "invaild" : {
+                "type" : "number"
+            }
+        }  
+    },
+      
+    "expire_type" : {
+        "type" : "string",
+        "description" : "\"i\" denotes an inactive expiration and \"a\" denotes an active expiration."
+    }
+}
+             
+         
+    
+           
+           
+           
+           
+           
+           
+           
+           
+     
