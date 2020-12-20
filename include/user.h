@@ -8,6 +8,16 @@
 #include    "flow.h"
 #include    "proto.h"
 
+typedef struct user_list_t{
+    pthread_rwlock_t rwlock;
+    int no_user;
+    struct user * user_list_head;
+    struct user * user_list_tail;
+} user_list_t;
+
+#define l_head(list) ((list).user_list_head)
+#define l_tail(list) ((list).user_list_tail)
+
 typedef struct list_head{
     struct user *prev;
     struct user *next;

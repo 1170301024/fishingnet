@@ -5,18 +5,12 @@
 #include    <pthread.h>
 
 
-typedef struct user_list_t{
-    pthread_rwlock_t rwlock;
-    int no_user;
-    struct user * user_list_head;
-    struct user * user_list_tail;
-} user_list_t;
+
 
 user_list_t user_list;
 user_list_t work_user_list;
 
-#define l_head(list) ((list).user_list_head)
-#define l_tail(list) ((list).user_list_tail)
+
 
 
 int init_user_list(){
@@ -86,6 +80,7 @@ int add_user(struct user *u){
     if(u->user_state & USER_WORKING){
         add_work_user(u);
     }
+    printf("added a new working  user\n");
     return 0;
 }
 
@@ -153,6 +148,7 @@ int add_work_user(struct user *u){
         err_msg("user state error");
         return -1;
     }
+    pthread_rwlock_wrlock(&(work_user_list.rwlock));
     if(NULL == l_head(work_user_list)){
         l_head(work_user_list) = l_tail(work_user_list) = u;
         (u->work_users).next = NULL;
@@ -166,6 +162,7 @@ int add_work_user(struct user *u){
         l_tail(work_user_list) = u;
     }
     work_user_list.no_user++;
+    pthread_rwlock_unlock(&(work_user_list.rwlock));
     return 0;
 }
 

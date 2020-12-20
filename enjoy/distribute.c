@@ -11,9 +11,10 @@
 #include    "../include/feature.h"
 #include    "../include/user.h"
 #include    "../include/flow.h"
+   
 
-extern struct user *work_user_list;
-extern struct user *work_user_list_tail;
+extern user_list_t work_user_list;
+
 int dsockfd;
 
 void *
@@ -51,17 +52,18 @@ void distribute(){
     int msg_len;
 
     while(1){
-        printf("get ont flow record\n");
-        if(get_flow_record(&record) <= 0){
+        printf("get one flow record\n");
+        if(get_flow_record(&record) < 0){
             err_msg("next_record error");
             continue;
         }
-        for(u = work_user_list; u != NULL; u = u->work_users.next){
+        pthread_rwlock_rdlock(&(work_user_list.rwlock));
+        for(u = l_head(work_user_list); u != NULL; u = u->work_users.next){
             if(0 == user_features_match(record.fm, u->config->fm)){
                 continue;
             }
             if((msg_len = construct_feature_msg(u, &record)) < 0){
-                err_msg("cnstruct feature message error");
+                err_msg("construct feature message error");
                 continue;
             }
 
@@ -69,8 +71,12 @@ void distribute(){
                 err_msg("length of udp message beyond MAX_UDP_MSG");
                 continue;
             }
+            
+            printf("send a packet to %s:%d\n", inet_ntoa(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_addr), ntohs(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_port));
+
             sendmsg(dsockfd, &(u->user_msghdr), 0);
         }
+        pthread_rwlock_unlock(&(work_user_list.rwlock));
     }
 }
 
@@ -81,10 +87,20 @@ void distribute(){
  * will be blocked until a new flow record comes.
  */
 int get_flow_record(struct flow_record *record){
-    sleep(1);
+    
+    sleep(5);
 
-   
-    return 1;
+    char *json_str1 = "{\"sa\":\"192.168.1.85\",\"da\":\"158.130.5.201\",\"pr\":6,\"idp_len_in\":93}";
+    init_flow_record(record);
+    json_string2flow_record(record, json_str1);
+    for (int i = 1; i <= NO_FEATURE; i++){
+        if(record->features[i].flags == NONEMPTY){
+            fprintf(stdout, "code :%d \"%s\":%s, len:%d\n", i, record->features[i].name, record->features[i].value, record->features[i].val_len);
+        }
+    }
+
+
+    return 0;
 }
 
 /*
@@ -100,8 +116,8 @@ int get_flow_record(struct flow_record *record){
 int construct_feature_msg(struct user *u, struct flow_record *record){
     int option_len = 0;
     int ft_count = 0;
-
-#ifdef __ENJOY_DEBUG
+    
+#ifdef ENJOY_DEBUG
     if(0 == user_features_match(record->fm, u->config->fm)){
         err_msg("features of user not included in features of flow record");
         return -1;
@@ -114,8 +130,9 @@ int construct_feature_msg(struct user *u, struct flow_record *record){
                 err_msg("a not non-empty feature is filled into a feature message");
                 return -1;
             }
-            ((char *)(u->user_msghdr.msg_iov[ft_count * 2 + 1].iov_base))[0] = (char)cd;
-            ((short *)(u->user_msghdr.msg_iov[ft_count * 2 + 1].iov_base))[1] = (short)record->features[cd].val_len;
+        
+            ((char *)(u->user_msghdr.msg_iov[ft_count * 2 + 1].iov_base))[0] = cd;
+            *((short *)((char *)(u->user_msghdr.msg_iov[ft_count * 2 + 1].iov_base) + 1)) = (short)(record->features[cd].val_len);
             u->user_msghdr.msg_iov[ft_count * 2 + 2].iov_base = record->features[cd].value;
             u->user_msghdr.msg_iov[ft_count * 2 + 2].iov_len = record->features[cd].val_len;;
             option_len += record->features[cd].val_len + 3;
@@ -125,7 +142,7 @@ int construct_feature_msg(struct user *u, struct flow_record *record){
 
     ((char *)(u->user_msghdr.msg_iov[0].iov_base))[0] = FEATURE;
     ((char *)(u->user_msghdr.msg_iov[0].iov_base))[1] = GENERAL_CODE;
-    ((short *)(u->user_msghdr.msg_iov[0].iov_base))[2] = option_len + 4;
+    *((short *)((char *)(u->user_msghdr.msg_iov[0].iov_base) + 2)) = option_len + 4;
     return option_len + 4;
 }
 /*

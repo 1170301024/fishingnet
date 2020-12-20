@@ -39,12 +39,13 @@ pcap_t * open_pcap_device(char *device){
     return pd;
 }
 
-int init_joy(){
+int 
+init_feature_extract(){
     joy_init_t init_data;
 
     memset(&init_data, 0x00, sizeof init_data);
 
-#ifdef __ENJOY_DEBUG
+#ifdef ENJOY_DEBUG
     init_data.verbosity = 1;
 #else
     init_data.verbosity = 4;
@@ -62,7 +63,7 @@ int init_joy(){
         err_quit("joy initialized failed");
     }
     for(int n=0; n < init_data.contexts; n++){
-        joy_print_config(n, JOY_JSON_FORMAT);
+        joy_print_config(n, JOY_TERMINAL_FORMAT);
     }
 
 }
@@ -72,6 +73,9 @@ int init_joy(){
  *   
  *
  */
+int feature_extract(){
+    
+}
 
 
 

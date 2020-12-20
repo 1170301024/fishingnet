@@ -3,7 +3,7 @@ INCLDDIR = ../include
 CFLAGS = -I $(INCLDDIR)/*.h
 
 OBJS = fishing_net.o user.o connect_manage.o \
-		distribute.o error.o wrappthread.o
+		distribute.o error.o wrappthread.o flow.o
 
 fishing_net: $(OBJS) -lpthread
 	cc $(OBJS) -lpthread -o fishing_net
@@ -24,6 +24,8 @@ error.o: $(INCLDDIR)/*.h
 
 wrappthread.o: $(INCLDDIR)/*.h
 	cc -c $(CFLAGS) wrappthread.c
+flow.o: $(INCLDDIR)/*.h
+	cc -c $(CFLAGS) flow.c
 
 .PHONY: clean
 clean: 

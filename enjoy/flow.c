@@ -140,6 +140,7 @@ void json_string2flow_record(struct flow_record *flow_record, char *str){
             flow_record->features[feature_idx].code = feature_idx;
             flow_record->features[feature_idx].name = name;
             flow_record->features[feature_idx].value = value;
+            flow_record->features[feature_idx].val_len = value_len;
             flow_record->no_feature++;
         }
         else{

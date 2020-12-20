@@ -42,9 +42,10 @@ void *init_udp_connect_service(void *arg){
     
     printf("Initialization of connection service completed, waiting for user request\n");
     for( ; ; ){
-        n = recvfrom(cmsockfd, msg, MAX_UDP_MSG, 0, &client_addr, &len);
+        n = recvfrom(cmsockfd, msg, MAX_UDP_MSG, 0, (struct sockaddr*)&client_addr, &len);
         if(n < 0){
             err_sys("recvfrom error");
+            continue;
         }
 #ifdef LOCAL_NET_ENV
         inet_pton(AF_INET, "192.168.182.133", &(client_addr.sin_addr.s_addr));
@@ -224,7 +225,7 @@ static void process_config(struct sockaddr *addr, char *cfg_data, int cfg_data_l
     }
 
     pthread_rwlock_wrlock(&(u->rwlock));
-    u->user_msghdr.msg_iov = (struct iovec*) malloc(sizeof(struct iovec) * no_ft *  2 + 1);
+    u->user_msghdr.msg_iov = (struct iovec*) malloc(sizeof(struct iovec) * (no_ft *  2 + 1));
     u->user_msghdr.msg_iovlen = no_ft * 2 + 1;
     u->user_msghdr.msg_iov[0].iov_base = (char *)malloc(4);
     u->user_msghdr.msg_iov[0].iov_len = 4;
@@ -232,11 +233,12 @@ static void process_config(struct sockaddr *addr, char *cfg_data, int cfg_data_l
         ft_flag = *(cfg_data + sizeof no_ft + b_count);
         for(int i=0; i<8; i++){
             if(ft_flag & (1 << i)){
-                ft_count++;
+                
                 code = b_count * 8 + i;
                 mask_fm(u->config->fm, code);
                 u->user_msghdr.msg_iov[ft_count * 2 + 1].iov_base = (char *)malloc(3); // !!!!!
                 u->user_msghdr.msg_iov[ft_count * 2 + 1].iov_len = 3;  
+                ft_count++;
             }
             if(ft_count == no_ft){
                 break;
