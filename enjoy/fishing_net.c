@@ -10,7 +10,7 @@
 #include    "../include/fnetthread.h"
 #include    "../include/error.h"
 
-int main(void){
+int main(){
     system_init();
 }
 
@@ -25,20 +25,35 @@ int system_init(){
 
     Pthread_create(&cmtid, NULL, init_udp_connect_service, NULL);
     printf("connect service created\n");
-
+    
+   // sleep(5);
     if(pipe(fxd_pipe) == -1){
         err_quit("pipe error");
     }
-    
+
     if((fxpid = fork()) == 0){
+        sleep(3);
+        close(fxd_pipe[0]);
+        if(dup2(fxd_pipe[1], STDOUT_FILENO) < 0){
+            err_sys("dup2 error");
+            return;
+        }
+        
         close(fxd_pipe[1]);
-        init_feature_extract();
+        init_feature_extract_service();
+        return;
     }
 
+    close(fxd_pipe[1]);
+    if(dup2(fxd_pipe[0], STDIN_FILENO) < 0){
+        err_sys("dup2 error");
+        return ;
+    }
     close(fxd_pipe[0]);
+    
     Pthread_create(&dtid, NULL, init_distribute_service, NULL);
     printf("distribute service created\n");
-
+    
     Pthread_join(cmtid, NULL);
     Pthread_join(dtid, NULL);
     exit(0);

@@ -27,6 +27,7 @@ void *init_udp_connect_service(void *arg){
     cmsockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if(-1 == cmsockfd){
         err_sys("socket error");
+        return ; 
     }
 
     memset(&server_addr, 0, sizeof server_addr);
@@ -38,8 +39,9 @@ void *init_udp_connect_service(void *arg){
     server_addr.sin_addr.s_addr = htonl(SERVER_UDP_CONNECT_IPv4);
     if(bind(cmsockfd, (struct sockaddr *)&server_addr, sizeof server_addr) == -1){
         err_sys("bind error");
+        return ;
     }
-    
+    init_user_list();
     printf("Initialization of connection service completed, waiting for user request\n");
     for( ; ; ){
         n = recvfrom(cmsockfd, msg, MAX_UDP_MSG, 0, (struct sockaddr*)&client_addr, &len);
@@ -48,7 +50,7 @@ void *init_udp_connect_service(void *arg){
             continue;
         }
 #ifdef LOCAL_NET_ENV
-        inet_pton(AF_INET, "192.168.182.133", &(client_addr.sin_addr.s_addr));
+        inet_pton(AF_INET, "192.168.79.128", &(client_addr.sin_addr.s_addr));
         client_addr.sin_port = htons(60606);
 #endif
         printf("Receive a packet from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
@@ -247,8 +249,9 @@ static void process_config(struct sockaddr *addr, char *cfg_data, int cfg_data_l
         b_count++;
     }while(ft_count != no_ft);
 
+    printf("%d, %d\n", b_count, cfg_data_len);
     // the function does not change the user state to USER_CONFIGURED, it exits directly to invalidate the previously settings
-    if((b_count + sizeof no_ft) != cfg_data_len){
+    if((b_count + sizeof no_ft) > cfg_data_len){
         err_msg("config message error");
         goto err_rsp;
     }

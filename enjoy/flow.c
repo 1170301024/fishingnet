@@ -3,6 +3,7 @@
 #include <string.h>
 #include "../include/flow.h"
 #include "../include/test.h"
+#include "../include/error.h"
 
 static const char *features[NO_FEATURE+1] = {
     [0]= NULL, [1]="sa", [2]="da", [3]="pr",
@@ -11,7 +12,7 @@ static const char *features[NO_FEATURE+1] = {
     [12]="packets", [13]="byte_dist", [14]="byte_dist_mean", [15]="byte_dist_std",
     [16]="entropy", [17]="total_entropy", [18]="p_malware", [19]="ip", 
     [20]="tcp", [21]="oseq", [22]="oack", [23]="iseq",
-    [24]="iack", [25]="ppi", [26]="frinterprints", [27]="wht",
+    [24]="iack", [25]="ppi", [26]="fingerprints", [27]="wht",
     [28]="dns", [29]="ssh", [30]="tls", [31]="dhcp",
     [32]="dhcpv6", [33]="http", [34]="ike", [35]="payload",
     [36]="exe", [37]="hd", [38]="probable_os", [39]="idp_out",
@@ -19,11 +20,11 @@ static const char *features[NO_FEATURE+1] = {
     [44]="expire_type"
 };
 
-char *feature_codes[NO_FEATURE+1];
 /*
  * 
  */
-void init_flow_record(struct flow_record *record){
+void 
+init_flow_record(struct flow_record *record){
     if (NULL == record)
     {
         fprintf(stderr, "flow record pointer is null");
@@ -40,20 +41,36 @@ void init_flow_record(struct flow_record *record){
     return ; 
 }
 
+void 
+free_flow_record(struct flow_record *record){
+    if (NULL == record)
+    {
+        fprintf(stderr, "flow record pointer is null");
+        return ;
+    }
+    for (int i=0; i<=NO_FEATURE; i++){
+        if(record->features[1].flags == NONEMPTY){
+            free(record->features[i].name);
+            free(record->features[i].value);
+        }
+    }
+}
+
 /*
  * Convert a flow record string by joy into a flow record struct, the flow
  * record string is in standord JSON format, and there is no white space
  * in the flow record string. 
  * 
  */
-void json_string2flow_record(struct flow_record *flow_record, char *str){
+int
+json_string2flow_record(struct flow_record *flow_record, char *str){
     int deep_count = 0;
     char value_border_start, value_border_end;
-    char *name, *value, *str_init = str;
+    char *name = NULL, *value = NULL, *str_init = str;
     int i, name_len, value_len, lct = 0, feature_idx;
 
     if(str == NULL){
-        fprintf(stderr, "the json string is null");
+        err_msg("the json string is null");
         return;
     }
 
@@ -72,6 +89,10 @@ void json_string2flow_record(struct flow_record *flow_record, char *str){
             name_len++;
         }
         name = (char *)malloc(name_len + 1);
+        if(name == NULL){
+            err_msg("malloc error");
+            return -1;
+        }
         strncpy(name, str + 1, name_len);
         name[name_len] = '\0';
         str += name_len + 2;
@@ -149,10 +170,14 @@ void json_string2flow_record(struct flow_record *flow_record, char *str){
         str += value_len + 1; 
     }while(*str != '\0');
     
-    return;
+    return 0;
 
 error:
-    fprintf(stderr, "error:%d char: string:%s\n", lct, str_init+lct);
+    free_flow_record(flow_record);
+    free(value);
+    free(name);
+    err_msg("flow record json string:%d:string:%s\n\t| %s", lct, str_init, str_init+lct);
+    return -1;
 
 }
 

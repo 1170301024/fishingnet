@@ -30,7 +30,7 @@
 #define ISEQ        23
 #define IACK        24
 #define PPI     25
-#define FRINTERPRINTS       26
+#define FINTERPRINTS       26
 #define WHT     27
 #define DNS     28
 #define SSH     29
@@ -97,7 +97,9 @@ struct flow_record{
 
 void init_flow_record(struct flow_record *record);
 
-void json_string2flow_record(struct flow_record *flow_record, char *str);
+void free_flow_record(struct flow_record *record);
+
+int json_string2flow_record(struct flow_record *flow_record, char *str);
 
 void flow_record2json_string(struct flow_record *flow_record, char **str);
 

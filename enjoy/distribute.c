@@ -4,6 +4,7 @@
 #include    <sys/param.h>
 #include    <stdio.h>
 #include    <string.h>
+#include    <unistd.h>
 
 #include    "../include/error.h"
 #include    "../include/enjoy.h"
@@ -34,10 +35,10 @@ init_distribute_service(void * arg){
     
     if(-1 == bind(dsockfd, (struct sockaddr *)&daddr, sizeof daddr)){
         err_sys("bind error");
+        return ;
     }
-    init_user_list();
-
-    printf("finish initializing distribute service\n");
+    //init_user_list();
+    printf("-=Distribution service initialized=-\n");
     distribute();
 }
 
@@ -52,9 +53,9 @@ void distribute(){
     int msg_len;
 
     while(1){
-        printf("get one flow record\n");
+        
         if(get_flow_record(&record) < 0){
-            err_msg("next_record error");
+            //err_msg("next_record error");
             continue;
         }
         pthread_rwlock_rdlock(&(work_user_list.rwlock));
@@ -72,11 +73,12 @@ void distribute(){
                 continue;
             }
             
-            printf("send a packet to %s:%d\n", inet_ntoa(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_addr), ntohs(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_port));
+            //printf("Send a packet to %s:%d\n", inet_ntoa(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_addr), ntohs(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_port));
 
             sendmsg(dsockfd, &(u->user_msghdr), 0);
         }
         pthread_rwlock_unlock(&(work_user_list.rwlock));
+        free_flow_record(&record);
     }
 }
 
@@ -88,17 +90,34 @@ void distribute(){
  */
 int get_flow_record(struct flow_record *record){
     
-    sleep(5);
+    int len;
+    
+    char json_str[65535];
 
-    char *json_str1 = "{\"sa\":\"192.168.1.85\",\"da\":\"158.130.5.201\",\"pr\":6,\"idp_len_in\":93}";
+    fgets(json_str, 65535, stdin);
+    //read(STDIN_FILENO, json_str, 1023);
+    
+    len = strlen(json_str);
+    if(len <= 1){
+        return -1;
+    }
+    if(len > 65535){
+        err_msg("string error");
+        return -1;
+    }
+    puts(json_str);
+
+    json_str[len-1] = '\0';
     init_flow_record(record);
-    json_string2flow_record(record, json_str1);
+    if(json_string2flow_record(record, json_str) < 0){
+        return -1;
+    }
+    /*sleep(2);
     for (int i = 1; i <= NO_FEATURE; i++){
         if(record->features[i].flags == NONEMPTY){
-            fprintf(stdout, "code :%d \"%s\":%s, len:%d\n", i, record->features[i].name, record->features[i].value, record->features[i].val_len);
+            fprintf(stdout, "%d. \"%s\":%s, len:%d\n", i, record->features[i].name, record->features[i].value, record->features[i].val_len);
         }
-    }
-
+    }*/
 
     return 0;
 }

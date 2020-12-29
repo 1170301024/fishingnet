@@ -1,0 +1,54 @@
+start tcpdump
+2020-12-23_22:01:45_183851700
+tcpdump: listening on nflog:10246, link-type NFLOG (Linux netfilter log messages), capture size 262144 bytes
+ 
+start shell
+2020-12-23_22:01:46_307219500
+ 
+2020-12-23_22:01:46_412252400
+open facebook
+2020-12-23_22:01:52_054902500
+ 
+2020-12-23_22:01:55_281156200
+writing search
+2020-12-23_22:01:59_495904300
+ 
+2020-12-23_22:02:03_536052400
+user profile selection
+2020-12-23_22:02:07_869721000
+ 
+2020-12-23_22:02:11_464484500
+user photos selection
+2020-12-23_22:02:13_688264300
+ 
+2020-12-23_22:02:19_304615700
+writing message
+2020-12-23_22:02:23_077155200
+ 
+2020-12-23_22:02:29_053634300
+photos album selection
+2020-12-23_22:02:30_630436000
+ 
+2020-12-23_22:02:34_835209800
+menu news selection
+2020-12-23_22:02:37_743251500
+ 
+2020-12-23_22:02:44_081630500
+back to news
+2020-12-23_22:02:45_518609400
+ 
+2020-12-23_22:02:49_782112000
+facebook in background for 200 sec
+2020-12-23_22:06:09_994953700
+ 
+2020-12-23_22:06:13_198964700
+killing facebook
+2020-12-23_22:06:14_861182100
+ 
+kill tcpdump
+2020-12-23_22:06:15_262037600
+ 
+1195 packets captured
+1195 packets received by filter
+0 packets dropped by kernel
+sdcard/facebook/13.pcap: 1 file pulled, 0 skipped. 36.6 MB/s (677672 bytes in 0.018s)
