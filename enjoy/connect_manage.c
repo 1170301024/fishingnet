@@ -235,7 +235,6 @@ static void process_config(struct sockaddr *addr, char *cfg_data, int cfg_data_l
         ft_flag = *(cfg_data + sizeof no_ft + b_count);
         for(int i=0; i<8; i++){
             if(ft_flag & (1 << i)){
-                
                 code = b_count * 8 + i;
                 mask_fm(u->config->fm, code);
                 u->user_msghdr.msg_iov[ft_count * 2 + 1].iov_base = (char *)malloc(3); // !!!!!
@@ -247,14 +246,13 @@ static void process_config(struct sockaddr *addr, char *cfg_data, int cfg_data_l
             }
         }
         b_count++;
+        if((b_count + sizeof no_ft) > cfg_data_len){
+            err_msg("config message error");
+            goto err_rsp;
+        }
+
     }while(ft_count != no_ft);
 
-    printf("%d, %d\n", b_count, cfg_data_len);
-    // the function does not change the user state to USER_CONFIGURED, it exits directly to invalidate the previously settings
-    if((b_count + sizeof no_ft) > cfg_data_len){
-        err_msg("config message error");
-        goto err_rsp;
-    }
 
     u->config->no_feature = ft_count;
     u->user_state |= USER_CONFIGURED;    

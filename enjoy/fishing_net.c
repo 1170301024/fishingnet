@@ -26,7 +26,7 @@ int system_init(){
     Pthread_create(&cmtid, NULL, init_udp_connect_service, NULL);
     printf("connect service created\n");
     
-   // sleep(5);
+    //sleep(100);
     if(pipe(fxd_pipe) == -1){
         err_quit("pipe error");
     }

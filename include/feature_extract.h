@@ -11,7 +11,7 @@
 
 #define MAC_ADDR_STR_LEN 32
 
-#define NO_PACKETS_IN_LOOP 20
+#define NO_PACKETS_IN_LOOP 200
 
 //
 // Possible flags for the  iiFlags - bitmask.

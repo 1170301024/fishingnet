@@ -38,7 +38,7 @@ parser_nflog(const unsigned char *packet, struct nflog *nflog, int * payload_off
     return 0;
 }
 
-
+/*
 struct ethernet pad_linker = {
     .dst = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
     .src = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -86,15 +86,15 @@ void task_joy_libpcap_process_packet(unsigned char *ctx_index,
 
     unsigned char * new_packet = (unsigned char *)(linker_addr);
     /* make sure we have a packet to process */
-    if (packet == NULL) {
+/*    if (packet == NULL) {
         return;
     }
     /* ctx_index has the int value of the data context
      * This number is between 0 and max configured contexts
      */
-    index = (uint64_t)ctx_index;
+ /*   index = (uint64_t)ctx_index;
 
     ctx = joy_index_to_context(index);
     process_packet((unsigned char*)ctx, new_header, new_packet);
     free(new_header);
-}
+}*/

@@ -245,9 +245,9 @@ init_feature_extract_service(){
 
     // task_lab
     char path[256];
-    for(int i=1; i<=41; i++)
+    for(int i=101; i<=200; i++)
     {
-        sprintf(path, "../data/%d/%d.pcap", i, i);
+        sprintf(path, "../../data200/%d/%d.pcap", i, i);
         feature_extract_from_pcap(path);
         sleep(2);
     }
