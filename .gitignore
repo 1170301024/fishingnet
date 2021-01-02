@@ -1,4 +1,4 @@
 .gitignore
 enjoy/*.o
 include/*.gch
-
+enjoy/./libs/**
