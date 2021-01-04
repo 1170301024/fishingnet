@@ -1,6 +1,6 @@
 
 INCLDDIR = ../include
-CFLAGS = -I $(INCLDDIR)/*.h
+CFLAGS = -I $(INCLDDIR)
 
 LADIR = ../lib/joy
 OBJS =  user.o connect_manage.o \

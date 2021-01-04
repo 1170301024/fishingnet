@@ -245,9 +245,10 @@ init_feature_extract_service(){
 
     // task_lab
     char path[256];
-    for(int i=1; i<=41; i++)
+    char * data_file = "TWdata200";
+    for(int i=1; i<=200; i++)
     {
-        sprintf(path, "../data/%d/%d.pcap", i, i);
+        sprintf(path, "../../%s/%d/%d.pcap", data_file, i, i);
         feature_extract_from_pcap(path);
         sleep(2);
     }
