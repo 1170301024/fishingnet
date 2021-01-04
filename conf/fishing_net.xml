@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+
+<Server>
+    <!--A "ConnectService" represents an endpoint by which connect requests 
+        are received and responses are returned. 
+        "address" only supports IPv4, "address"="anyaddr" denotes any IPv4 on the mechine
+        "address"="anyaddr"
+    -->
+    <ConnectService address="anyaddr" port="60720"/>
+
+    <!--A"DistributeService" represents an endpoint by which feature messages are sent-->
+    <DistributeService address="anyaddr" port="60721"/>
+
+    <!--"PcapHander" is used for handle pcap file uploaded from user-->
+    <PcapHandler avaliable="false" directory="../directory/pcaps">
+    <PcapHandler/>
+
+    <Configuration>
+        <!-- configuration file for flow feature data capture -->
+        <FlowConfig path="./flowConfig.cfg"/>
+
+        <!--logfile sets the secondary output stsream, that is, the file to
+            which error/warnings/info/debug statements will be sent; if this
+            value is "none", then stderr will be used
+        -->
+        <Logfile path=/usr/local/var/log/joy.log/>
+
+        <!-- 
+            An interface must be specified for live data capture; linux uses
+            eth0 and wlan0, MacOS uses en0.  Can be set to "auto", which is
+            recommended, since it will then select an active, non-loopback
+            interface automatically.  It can also be set to "none", in which
+            case the interface must be specified on the attribute
+         -->
+        <Interface >auto</Interface>
+        <!-- 
+            verbosity = 0 -> silent
+            verbosity = 1 -> show debug, info, warnings, errors and critical errors
+                 report all data of each packet
+            verbosity = 2 -> show info, warnings, errors and critical errors
+                 report a summary of each packet
+            verbosity = 3 -> show warnings, errors and critical errors
+            verbosity = 4 -> show errors and critical errors
+            verbosity = 5 -> show critical errors only
+         -->
+        <Verbosity>2</Verbosity>
+
+        <!-- Show Configuration -->
+
+        <!-- show_config=1 shows the joy configuration on stderr or in the log file
+             when joy is started.
+             default is 0
+        -->
+        <ShowConfig>1</ShowConfig>
+
+        <!-- show_config=1 shows the joy configuration on stderr or in the log file
+             when joy is started.
+             default is 0.
+             show_config = 0 
+        -->
+        <ShowInterface>1</ShowInterface>
+        
+    </Configuration>
+    
+</Server>

@@ -1,8 +1,10 @@
-
 #ifndef _ERROR_H
 #define _ERROR_H
 
 #define MAX_ERR_LINE 512
+
+#define failure 1
+#define ok 0
 
 void	 err_dump(const char *, ...);
 void	 err_msg(const char *, ...);
