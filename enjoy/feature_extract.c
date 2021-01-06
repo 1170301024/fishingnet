@@ -154,7 +154,7 @@ open_pcap_device(char *device){
     if(NULL == device){
         err_quit("the device is null", "");
     }
-    fprintf(stderr, "device %s is being opened\n", device);
+    // fprintf(stderr, "device %s is being opened\n", device);
     if((pd = pcap_open_live(device, snaplen, 0, snaplen, errbuf)) == NULL){
         err_msg("pcap_open_live: %s\n", errbuf);
         return NULL;
