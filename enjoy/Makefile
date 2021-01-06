@@ -1,6 +1,6 @@
 
 INCLDDIR = ../include
-CFLAGS = -I $(INCLDDIR)/*.h
+CFLAGS = --std=c99 -I $(INCLDDIR)
 
 OBJS = fishing_net.o user.o connect_manage.o \
 		distribute.o error.o wrappthread.o flow.o
