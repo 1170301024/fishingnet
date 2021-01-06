@@ -10,15 +10,17 @@
 #include    "../include/user.h"
 #include    "../include/error.h"
 #include    "../include/connect_manage.h"
+#include    "../include/config.h"
 
 /*
  * I should consider that user has more than one ip, in this case, maybe two udp packets from user to
  * server have different ip, then which ip should be chosen to send from server. 
  */
 
+extern fnet_configuration_t fnet_glb_config;
 int cmsockfd;
 
-void *init_udp_connect_service(void *arg){
+void init_udp_connect_service(void *arg){
     char msg[MAX_UDP_MSG];
     int n;
     socklen_t len;
@@ -34,15 +36,29 @@ void *init_udp_connect_service(void *arg){
 
     // init the server endpoint info
     server_addr.sin_family = AF_INET; 
-    server_addr.sin_port = htons(SERVER_UDP_CONNECT_PORT);
+
+    // get port from configuration 
+    server_addr.sin_port = htons(fnet_glb_config.connect_s_cfg.port);
     
-    server_addr.sin_addr.s_addr = htonl(SERVER_UDP_CONNECT_IPv4);
+    /* get sin_addr from configuration in two situations
+     *     1. address = "anyaddr" 
+     *     2. address = "*.*.*.*"
+     */  
+
+    // address = "anyaddr"
+    if(!strcmp(fnet_glb_config.connect_s_cfg.address, IPv4_ANYADDR)){ 
+        server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    }
+    else if(inet_pton(AF_INET, fnet_glb_config.connect_s_cfg.address, &(server_addr.sin_addr)) == -1){
+        err_sys("address error");
+    }
+    
+    
     if(bind(cmsockfd, (struct sockaddr *)&server_addr, sizeof server_addr) == -1){
         err_sys("bind error");
         return ;
     }
-    init_user_list();
-    printf("Initialization of connection service completed, waiting for user request\n");
+    printf("\nInitialization of connection service completed, waiting for user request\n");
     for( ; ; ){
         n = recvfrom(cmsockfd, msg, MAX_UDP_MSG, 0, (struct sockaddr*)&client_addr, &len);
         if(n < 0){
@@ -57,11 +73,11 @@ void *init_udp_connect_service(void *arg){
         
         parse_udp_connect_msg((struct sockaddr *)&client_addr, sizeof client_addr, msg, n);
     }
+    return;
 }
 
 static void parse_udp_connect_msg(struct sockaddr *addr, int addr_len, char *msg, int len){
     udp_connect_protocol p;
-    unsigned rsp_type, rsp_code;
 
     p.code = msg[0];
     p.type = msg[1];

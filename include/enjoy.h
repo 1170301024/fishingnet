@@ -5,7 +5,7 @@
 
 #define ENJOY_DEBUG
 #define __USE_UNIX98
-#define DEBUG_MEASURE_TIME 1
+#define DEBUG_MEASURE_TIME 0
 
 #define LOCAL_NET_ENV
 #define NO_JOY_BM_ON 22

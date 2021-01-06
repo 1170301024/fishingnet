@@ -4,10 +4,10 @@ CFLAGS = -I $(INCLDDIR) -O2 -Wall
 
 LADIR = ../lib/joy
 OBJS =  user.o connect_manage.o \
-		distribute.o error.o wrappthread.o flow.o feature_extract.o nflog.o 
+		distribute.o error.o wrappthread.o flow.o feature_extract.o config.o nflog.o 
 
 fishing_net: fishing_net.lo $(OBJS) -lpthread -lpcap
-	libtool --mode=link gcc -o fishing_net $(OBJS) -lpthread -lpcap \
+	libtool --mode=link gcc -o fishing_net $(OBJS) -lpthread -lpcap -lxml2 \
 			fishing_net.lo -lm $(LADIR)/libjoy.la  -lm \
 			../lib/safe_c_stub/libjoy_la-safe_mem_stub.o \
 			../lib/safe_c_stub/libjoy_la-safe_str_stub.o
@@ -36,10 +36,14 @@ flow.o: $(INCLDDIR)/*.h
 feature_extract.o:
 	cc -c $(CFLAGS) feature_extract.c
 
+config.o:
+	cc -c $(CFLAGS) config.c
 nflog.o:
 	cc -c $(CFLAGS) nflog.c
+
 .PHONY: clean
 clean: 
-	rm *.o ../include/*.gch joy-output*
+	rm *.o 
 	rm *.lo
-	rm -r .libs/
+	rm -r .libs
+	rm fishing_net

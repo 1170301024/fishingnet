@@ -10,7 +10,9 @@
 #include    "../include/joy/joy_api.h"
 #include    "../include/joy/joy_api_private.h"
 #include    "../include/feature_extract.h"
+#include    "../include/config.h"
 
+extern fnet_configuration_t fnet_glb_config;
 
 static struct intrface ifl[IFL_MAX];
 int no_ifs;
@@ -152,7 +154,7 @@ open_pcap_device(char *device){
     if(NULL == device){
         err_quit("the device is null", "");
     }
-    printf("device %s is being opened\n", device);
+    fprintf(stderr, "device %s is being opened\n", device);
     if((pd = pcap_open_live(device, snaplen, 0, snaplen, errbuf)) == NULL){
         err_msg("pcap_open_live: %s\n", errbuf);
         return NULL;
@@ -214,45 +216,54 @@ int
 init_feature_extract_service(){
     joy_init_t init_data;
 
+    struct data_feature_config *dfc = &fnet_glb_config.data_feature_cfg;
     memset(&init_data, 0x00, sizeof init_data);
 
-#ifdef ENJOY_DEBUG
-    init_data.verbosity = 4;
-#else
-    init_data.verbosity = 4;
-#endif
 
-    init_data.max_records = 0;
-    init_data.num_pkts = 50;
+    init_data.verbosity = fnet_glb_config.verbosity;
+    init_data.max_records = 0; // export all records into one file(pipe)
+    init_data.num_pkts = dfc->num_pkts;
     init_data.contexts = 1;
-    init_data.idp = 1400;
-    init_data.inact_timeout=5;
+    init_data.idp = dfc->idp; // default 1400(recommend)
+    init_data.inact_timeout = dfc->inact_timeout;
 
-    // turn on all bitmask value except JOY_IPFIX_EXPORT_ON
-    // init_data.bitmask = JOY_ALL_ON & (~JOY_IPFIX_EXPORT_ON);
-    init_data.bitmask = JOY_BIDIR_ON | JOY_ZERO_ON;
+    // turn on bitmask value from feature extraction options configuration
+    init_data.bitmask = 0;
+    if(dfc->bidir) init_data.bitmask |= JOY_BIDIR_ON;
+    if(dfc->zeroes) init_data.bitmask |= JOY_ZERO_ON;
+    if(dfc->retains) init_data.bitmask |= JOY_RETRANS_ON;
+    if(dfc->byte_distribution) init_data.bitmask |= JOY_BYTE_DIST_ON;
+    if(dfc->entropy) init_data.bitmask |= JOY_ENTROPY_ON;
+    if(dfc->exe) init_data.bitmask |= JOY_EXE_ON;
+    if(dfc->idp) init_data.bitmask |= JOY_IDP_ON;
+    if(dfc->hd) init_data.bitmask |= JOY_HEADER_ON;
+    if(dfc->dns) init_data.bitmask |= JOY_DNS_ON;
+    if(dfc->ssh) init_data.bitmask |= JOY_SSH_ON;
+    if(dfc->tls) init_data.bitmask |= JOY_TLS_ON;
+    if(dfc->dhcp) init_data.bitmask |= JOY_DHCP_ON;
+    if(dfc->http) init_data.bitmask |= JOY_HTTP_ON;
+    if(dfc->ike) init_data.bitmask |= JOY_IKE_ON;
+    if(dfc->ppi) init_data.bitmask |= JOY_PPI_ON;
+    if(dfc->salt) init_data.bitmask |= JOY_SALT_ON;
+    if(dfc->payload) init_data.bitmask |= JOY_PAYLOAD_ON;
     
     if(joy_initialize(&init_data, NULL, NULL, NULL) != 0){
         err_quit("=>Joy initialized failed<=", "");
     }
     for(int n=0; n < init_data.contexts; n++){
-        //joy_print_config(n, JOY_TERMINAL_FORMAT);
         joy_print_config(n, JOY_JSON_FORMAT);
     }
 
     no_ifs = interface_list_get();
-    print_interfaces(stderr, no_ifs);
-
-    // task_lab
-    char path[256];
-    for(int i=101; i<=200; i++)
-    {
-        sprintf(path, "../../data200/%d/%d.pcap", i, i);
-        feature_extract_from_pcap(path);
-        sleep(2);
+    if(no_ifs == 0){
+        err_quit("this mechine has no network, interface");
     }
-    // feature_extract_from_pcap("../test/pcaps/1.pcap");
-    //feature_extract_from_interface(ifl[0].name);
+    if(fnet_glb_config.interface == NULL || !strcmp(fnet_glb_config.interface, AUTO_IFF)){
+        feature_extract_from_interface(ifl[0].name);
+    }
+    else{
+        feature_extract_from_interface(fnet_glb_config.interface);
+    }    
 }
 // should i use thread? one thread for one device? or any other way?
 /*

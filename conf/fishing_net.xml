@@ -13,17 +13,17 @@
 
     <!--"PcapHander" is used for handle pcap file uploaded from user-->
     <PcapHandler avaliable="false" directory="../directory/pcaps">
-    <PcapHandler/>
+    </PcapHandler>
 
     <Configuration>
         <!-- configuration file for flow feature data capture -->
-        <FlowConfig path="./flowConfig.cfg"/>
+        <FlowConfig path="../conf/flowConfig.cfg"/>
 
         <!--logfile sets the secondary output stsream, that is, the file to
             which error/warnings/info/debug statements will be sent; if this
             value is "none", then stderr will be used
         -->
-        <Logfile path=/usr/local/var/log/joy.log/>
+        <Logfile path="/usr/local/var/log/joy.log"/>
 
         <!-- 
             An interface must be specified for live data capture; linux uses
@@ -32,7 +32,7 @@
             interface automatically.  It can also be set to "none", in which
             case the interface must be specified on the attribute
          -->
-        <Interface >auto</Interface>
+        <Interface>auto</Interface>
         <!-- 
             verbosity = 0 -> silent
             verbosity = 1 -> show debug, info, warnings, errors and critical errors

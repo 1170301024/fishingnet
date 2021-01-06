@@ -1,7 +1,7 @@
 #ifndef _CONNECT_MANAGE_H
 #define _CONNECT_MANAGE_H
 
-void *init_udp_connect_service(void * arg);
+void init_udp_connect_service(void * arg);
 
 static void parse_udp_connect_msg(struct sockaddr *addr, int addr_len, char *msg, int len);
 static void process_connect(struct sockaddr *addr, int addr_len);

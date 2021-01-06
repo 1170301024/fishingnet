@@ -12,8 +12,9 @@
 #include    "../include/feature.h"
 #include    "../include/user.h"
 #include    "../include/flow.h"
+#include    "../include/config.h"
    
-
+extern fnet_configuration_t fnet_glb_config;
 extern user_list_t work_user_list;
 
 int dsockfd;
@@ -21,7 +22,7 @@ int dsockfd;
 void *
 init_distribute_service(void * arg){
     struct sockaddr_in daddr;
-
+    struct distribute_service_config *dsc = &(fnet_glb_config.distribute_s_cfg);
     dsockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if(-1 == dsockfd){
         err_sys("socket error");
@@ -30,15 +31,28 @@ init_distribute_service(void * arg){
 
     // init endpoint info
     daddr.sin_family = AF_INET; 
-    daddr.sin_port = htons(FEATURE_DISTRIBUTE_PORT);
-    daddr.sin_addr.s_addr = htonl(FEATURE_DISTRIBUTE_IPv4);
-    
+
+    // get port from configuration struct 
+    daddr.sin_port = htons(dsc->port);
+
+    /* get sin_addr from configuration in two situations
+     *     1. address = "anyaddr" 
+     *     2. address = "*.*.*.*"
+     */  
+
+    // address = "anyaddr"
+    if(!strcmp(dsc->address, IPv4_ANYADDR)){ 
+        daddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    }
+    else if(inet_pton(AF_INET, dsc->address, &(daddr.sin_addr)) == -1){
+        err_sys("address error");
+    }
     if(-1 == bind(dsockfd, (struct sockaddr *)&daddr, sizeof daddr)){
         err_sys("bind error");
         return ;
     }
     //init_user_list();
-    printf("-=Distribution service initialized=-\n");
+    fprintf(stdout, "\nDistribution service initialized\n");
     distribute();
 }
 

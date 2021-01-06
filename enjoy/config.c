@@ -61,7 +61,60 @@ size_t getline(char **lineptr, size_t *n, FILE *stream);
 #endif
 
 /** returns if two string are the same */
-#define match(c, x) (strlen(x) == strlen(c) && !strncmp(c, x, strlen(x)))
+#define match(c, x) (!strncmp(c, x, strlen(x)))
+
+// only parse the value, do not care about whether valid argument is or not
+
+// parse integer 
+#define parse_intval(x, val_str, min, max) parse_int(x, val_str, 2, min, max)
+
+// parser short
+static int parse_shortval(unsigned short *x, const char *val_str,unsigned short min, unsigned short max) {
+    const char *c = val_str;
+    int rv;
+    if (val_str == NULL) {
+            return failure;
+    }
+    while (*c != 0) {
+        if (!isdigit(*c)) {
+            printf("error: argument %s must be a number ", val_str);
+            return failure;
+        }
+        c++;
+    }
+    rv = atoi(val_str);
+    if (rv < min || rv > max) {
+        printf("error: value must be between %d and %d ", min, max);
+        return failure;
+    }
+    *x = (unsigned short) rv;
+    return ok;
+}
+// parse uint_8
+static int parse_octval(uint8_t *x, const char *val_str, uint8_t min, uint8_t max) {
+    const char *c = val_str;
+    int rv;
+    if (val_str == NULL) {
+            return failure;
+    }
+    while (*c != 0) {
+        if (!isdigit(*c)) {
+            printf("error: argument %s must be a number ", val_str);
+            return failure;
+        }
+        c++;
+    }
+    rv = atoi(val_str);
+    if (rv < min || rv > max) {
+        printf("error: value must be between %d and %d ", min, max);
+        return failure;
+    }
+    *x = (uint8_t) rv;
+    return ok;
+}
+            
+// parse bool values
+#define parse_boolval(x, val_str) parse_bool(x, val_str, 1)
 
 /* parses an integer value */
 static int parse_int (unsigned int *x, const char *arg, int num_arg, unsigned int min, unsigned int max) {
@@ -77,8 +130,8 @@ static int parse_int (unsigned int *x, const char *arg, int num_arg, unsigned in
         }
         while (*c != 0) {
             if (!isdigit(*c)) {
-                      printf("error: argument %s must be a number ", arg);
-                      return failure;
+                printf("error: argument %s must be a number ", arg);
+                return failure;
             }
             c++;
         }
@@ -96,7 +149,6 @@ static int parse_int (unsigned int *x, const char *arg, int num_arg, unsigned in
 /* parses a boolean value */
 static int parse_bool (bool *x, const char *arg, int num_arg) {
     bool val = 0;
-
     /* if the number of arguments is one, default turn the option on */
     if (num_arg == 1) {
         *x = 1;
@@ -117,7 +169,6 @@ static int parse_bool (bool *x, const char *arg, int num_arg) {
 
     /* change the value into a digit */
     val = atoi(arg);
-
     /* if value is not 1, turn off option */
     if (val == 1) {
         *x = 1;
@@ -162,8 +213,8 @@ static int parse_string_multiple (char **s, char *arg, int num_arg,
 }
 
 
-/* parse commands */
-static int config_parse_data_feature (struct data_feature_config *config,
+/* parse feature options */
+static int config_parse_feature_option (struct data_feature_config *config,
                          const char *command, char *arg, int num) {  
     char *tmp;
     /* remove trailing whitespace from argument */
@@ -179,12 +230,12 @@ static int config_parse_data_feature (struct data_feature_config *config,
      * command name; otherwise, the shorter name will be matched rather
      * than the longer one
      */
-
+    
     if (match(command, "zeros")) {
         parse_check(parse_bool(&config->zeroes, arg, num));
 
-    } else if (match(command, "retrans")) {
-        parse_check(parse_bool(&config->retrans, arg, num));
+    } else if (match(command, "retain")) {
+        parse_check(parse_bool(&config->retains, arg, num));
 
     } else if (match(command, "bidir")) {
         parse_check(parse_bool(&config->bidir, arg, num));
@@ -226,7 +277,8 @@ static int config_parse_data_feature (struct data_feature_config *config,
         parse_check(parse_bool(&config->payload, arg, num));
 
     } 
-    return failure;
+    
+    return ok;
 }
 
 /**
@@ -238,11 +290,20 @@ static int config_parse_data_feature (struct data_feature_config *config,
  * \param config pointer to configuration structure
  * \return none
  */
-void config_set_defaults (configuration_t *config) {
+#include    <string.h>
+static void config_set_defaults (fnet_configuration_t *config) {
+
+    memset(config, 0x00, sizeof (fnet_configuration_t));
+    config->logfile = "./fnet.log";
     config->verbosity = 4;
     config->show_config = 0;
     config->show_interface = 0;
 
+    // for feature extraction default configuration    
+    struct data_feature_config *dfc = &config->data_feature_cfg;
+    dfc->num_pkts = 50;
+    dfc->inact_timeout = 5;
+    dfc->idp = 1400;
 }
 
 #define MAX_FILEPATH 128
@@ -281,7 +342,7 @@ static FILE* open_config_file(const char *filename) {
 #endif
 
     if (!fp) {
-        joy_log_err("could not open %s", filename);
+        err_msg("could not open %s", filename);
     }
 
     return fp;
@@ -307,7 +368,7 @@ int config_data_feature_from_file (struct data_feature_config *config, const cha
 
     f = open_config_file(fname);
     if (f == NULL) {
-        joy_log_err("could not find config file %s\n", fname);
+        err_msg("could not find config file %s\n", fname);
         return failure;
     } 
 
@@ -343,7 +404,8 @@ int config_data_feature_from_file (struct data_feature_config *config, const cha
             num = sscanf(line, "%[^=] = %[^\n#]", lhs, rhs);
             if (num == 2 || num == 1) {
                        // printf("%s = %s ### %d ### %s", lhs, rhs, num, line);
-                       if (config_parse_command(config, lhs, rhs, num) != ok) {
+                       
+                       if (config_parse_feature_option(config, lhs, rhs, num) != ok) {
                            fprintf(stderr, "error: unknown command (%s)\n", lhs);
                            fclose(f);
                            exit(EXIT_FAILURE);
@@ -376,10 +438,11 @@ int config_data_feature_from_file (struct data_feature_config *config, const cha
  * \return ok
  * \return failure
  */
-int config_from_xml(configuration_t *config, const char *fname){
+int config_from_xml(fnet_configuration_t *config, const char *fname){
     xmlDocPtr doc = NULL;
     xmlNodePtr node= NULL;
 
+    config_set_defaults(config);
     if((doc = xmlParseFile(fname)) == NULL){
         err_quit("parser %s error", fname);
     }
@@ -393,62 +456,70 @@ int config_from_xml(configuration_t *config, const char *fname){
         err_quit("xml node error");
     }
 
-    node = xmlChildrenNode(node);
+    node = node->children;
     while(node != NULL){
-        if(xmlStrcmp(node->name, BAD_CAST "ConnectService"))
+        if(!xmlStrcmp(node->name, BAD_CAST "ConnectService")) // parse connection service configuration
         {
             if(xmlHasProp(node, BAD_CAST "address")){
-
+                config->connect_s_cfg.address = xmlGetProp(node, BAD_CAST "address");
             }
-            if(mlHasProp(node, BAD_CAST "port")){
-
+            if(xmlHasProp(node, BAD_CAST "port")){
+                parse_shortval(&(config->connect_s_cfg.port), xmlGetProp(node, BAD_CAST "port"), 0, 65535);
             }
-            config->connect_s_cfg.address = NULL;
-        } else if(xmlStrcmp(node->name, BAD_CAST "DistributeService"))
+
+        } else if(!xmlStrcmp(node->name, BAD_CAST "DistributeService")) // parse distribution service configuration
         {
             if(xmlHasProp(node, BAD_CAST "address")){
-                
+                config->distribute_s_cfg.address = xmlGetProp(node, BAD_CAST "address");
             }
-            if(mlHasProp(node, BAD_CAST "port")){
-                
+            if(xmlHasProp(node, BAD_CAST "port")){
+                parse_shortval(&(config->distribute_s_cfg.port), xmlGetProp(node, BAD_CAST "port"), 0, 65535);
             }
              
-        } else if(xmlStrcmp(node->name, BAD_CAST "PcapHandler"))
+        } else if(!xmlStrcmp(node->name, BAD_CAST "PcapHandler"))    // parse pcap handler configuration 
         {
             
-        } else if(xmlStrcmp(node->name, BAD_CAST "Configuration"))
+        } else if(!xmlStrcmp(node->name, BAD_CAST "Configuration")) // parse system configuration
         {
             xmlNodePtr child_node;
-
             // parser child node of configuration
-            child_node = xmlChildrenNode(node);
+            child_node = node->children;
             while(child_node != NULL){
-                if(xmlStrcmp(child_node->name, BAD_CAST "Flowconfig"))
-                {
-
-                } else if(xmlStrcmp(child_node->name, BAD_CAST "Logfile"))
+                if(!xmlStrcmp(child_node->name, BAD_CAST "FlowConfig"))
                 {
                     if(xmlHasProp(child_node, BAD_CAST "path")){
                         config_data_feature_from_file(&config->data_feature_cfg, xmlGetProp(child_node, BAD_CAST "path"));
                     }
-                } else if(xmlStrcmp(child_node->name, BAD_CAST "Interface"))
+                } else if(!xmlStrcmp(child_node->name, BAD_CAST "Logfile"))
                 {
-                    
-                } else if(xmlStrcmp(child_node->name, BAD_CAST "Verbosity"))
+                    config->logfile = xmlGetProp(child_node, BAD_CAST "path");
+
+                } else if(!xmlStrcmp(child_node->name, BAD_CAST "Interface")) 
                 {
-                    
-                } else if(xmlStrcmp(child_node->name, BAD_CAST "ShowConfig"))
+                    config->interface = xmlNodeGetContent(child_node);
+
+                } else if(!xmlStrcmp(child_node->name, BAD_CAST "Verbosity"))
                 {
-                    
-                } else if(xmlStrcmp(child_node->name, BAD_CAST "ShowInterface"))
+                    parse_octval(&config->verbosity, xmlNodeGetContent(child_node), 0, 5); // igonre parse error
+
+                } else if(!xmlStrcmp(child_node->name, BAD_CAST "ShowConfig"))
                 {
-                    
+                    parse_boolval(&config->show_config, xmlNodeGetContent(child_node)); // ignore parse error
+
+                } else if(!xmlStrcmp(child_node->name, BAD_CAST "ShowInterface"))
+                {
+                    parse_boolval(&config->show_interface, xmlNodeGetContent(child_node)); // ignore parse error
+
+                } else // ignore 
+                {
+                    ;
                 }
-        
+                child_node = child_node->next;
             }
         }
+        node = node->next;
     }
-    
+    return 0;
 }
 
 /** determine if we have avlue or not */
@@ -460,93 +531,43 @@ int config_from_xml(configuration_t *config, const char *fname){
  * \param c pointer to the configuration structure
  * \return none
  */
-/*void config_print (FILE *f, const configuration_t *c) {
-    unsigned int i;
-#ifdef PACKAGE_VERSION
-    fprintf(f, "joy version = %s\n", PACKAGE_VERSION);
-#else
-    fprintf(f, "joy version = %s\n", VERSION);
-#endif
-    fprintf(f, "interface = %s\n", val(c->intface));
-    fprintf(f, "promisc = %u\n", c->promisc);
-    fprintf(f, "output = %s\n", val(c->filename));
-    fprintf(f, "outputdir = %s\n", val(c->outputdir));
-    fprintf(f, "username = %s\n", val(c->username));
-    fprintf(f, "count = %u\n", c->max_records); 
-    fprintf(f, "upload = %s\n", val(c->upload_servername));
-    fprintf(f, "keyfile = %s\n", val(c->upload_key));
-    for (i=0; i<c->num_subnets; i++) {
-        fprintf(f, "label=%s\n", c->subnet[i]);
-    }
-    fprintf(f, "retain = %u\n", c->retain_local);
-    fprintf(f, "bidir = %u\n", c->bidir);
-    fprintf(f, "num_pkts = %u\n", c->num_pkts);
-    fprintf(f, "zeros = %u\n", c->include_zeroes);
-    fprintf(f, "retrans = %u\n", c->include_retrans);
-    fprintf(f, "dist = %u\n", c->byte_distribution);
-    fprintf(f, "cdist = %s\n", val(c->compact_byte_distribution));
-    fprintf(f, "entropy = %u\n", c->report_entropy);
-    fprintf(f, "hd = %u\n", c->report_hd);
-    fprintf(f, "classify = %u\n", c->include_classifier);
-    fprintf(f, "idp = %u\n", c->idp);
-    fprintf(f, "exe = %u\n", c->report_exe);
-    fprintf(f, "anon = %s\n", val(c->anon_addrs_file));
-    fprintf(f, "useranon = %s\n", val(c->anon_http_file));
-    fprintf(f, "bpf = %s\n", val(c->bpf_filter_exp));
-
-    config_print_all_features_bool(feature_list);
-
+void fnet_config_print (FILE *f, const fnet_configuration_t *c) {
+   
+    fprintf(f, "Configurations\n==============\n");
+    fprintf(f, "interface = %s\n", val(c->interface));
+    fprintf(f, "logfile = %s\n", val(c->logfile));
     fprintf(f, "verbosity = %u\n", c->verbosity);
-    fprintf(f, "threads = %u\n", c->num_threads);
-    fprintf(f, "updater = %u\n", c->updater_on);
- */ 
-    /* note: anon_print_subnets is silent when no subnets are configured */
-/*    anon_print_subnets(f);
-}*/
+    fprintf(f, "show config = %u\n", c->show_config); 
+    fprintf(f, "show interface = %u\n", c->show_interface);
 
-/**
- * \fn void config_print_json (zfile f, const configuration_t *c)
- * \param f file to print configuration to
- * \param c pointer to the configuration structure
- * \return none
- */
-/*void config_print_json (zfile f, const configuration_t *c) {
-    unsigned int i;
+    fprintf(f, "\nconnection service:\n");
+    fprintf(f, "    address: %s\n",val(c->connect_s_cfg.address));
+    fprintf(f, "    port: %u\n",c->connect_s_cfg.port);
 
-    zprintf(f, "{\"version\":\"%s\",", VERSION);
-    zprintf(f, "\"interface\":\"%s\",", val(c->intface));
-    zprintf(f, "\"promisc\":%u,", c->promisc);
-    zprintf(f, "\"output\":\"%s\",", val(c->filename));
-    zprintf(f, "\"outputdir\":\"%s\",", val(c->outputdir));
-    zprintf(f, "\"username\":\"%s\",", val(c->username));
-    zprintf(f, "\"info\":\"%s\",", val(c->logfile));
-    zprintf(f, "\"count\":%u,", c->max_records); 
-    zprintf(f, "\"upload\":\"%s\",", val(c->upload_servername));
-    zprintf(f, "\"keyfile\":\"%s\",", val(c->upload_key));
-    for (i=0; i<c->num_subnets; i++) {
-        zprintf(f, "\"label\":\"%s\",", c->subnet[i]);
-    }
-    zprintf(f, "\"retain\":%u,", c->retain_local);
-    zprintf(f, "\"bidir\":%u,", c->bidir);
-    zprintf(f, "\"num_pkts\":%u,", c->num_pkts);
-    zprintf(f, "\"zeros\":%u,", c->include_zeroes);
-    zprintf(f, "\"retrans\":%u,", c->include_retrans);
-    zprintf(f, "\"dist\":%u,", c->byte_distribution);
-    zprintf(f, "\"cdist\":\"%s\",", val(c->compact_byte_distribution));
-    zprintf(f, "\"entropy\":%u,", c->report_entropy);
-    zprintf(f, "\"hd\":%u,", c->report_hd);
-    zprintf(f, "\"classify\":%u,", c->include_classifier);
-    zprintf(f, "\"idp\":%u,", c->idp);
-    zprintf(f, "\"exe\":%u,", c->report_exe);
-    zprintf(f, "\"anon\":\"%s\",", val(c->anon_addrs_file));
-    zprintf(f, "\"useranon\":\"%s\",", val(c->anon_http_file));
-    zprintf(f, "\"bpf\":\"%s\",", val(c->bpf_filter_exp));
-    zprintf(f, "\"verbosity\":%u,", c->verbosity);
-    zprintf(f, "\"threads\":%u,", c->num_threads);
-    zprintf(f, "\"updater\":%u,", c->updater_on);
+    fprintf(f, "\ndistribution service:\n");
+    fprintf(f, "    address: %s\n",val(c->distribute_s_cfg.address));
+    fprintf(f, "    port: %u\n",c->distribute_s_cfg.port);
 
-    config_print_json_all_features_bool(feature_list);
 
-    zprintf(f, "\"end-config\":1}\n");  
-}*/
+    
+
+    // data feature option configuration
+    const struct data_feature_config * fc = &c->data_feature_cfg;
+    fprintf(f, "\ndata feature options:\n");
+    fprintf(f, "    bidir = %u\n", fc->bidir);
+    fprintf(f, "    zeros = %u\n", fc->zeroes);
+    fprintf(f, "    retains = %u\n", fc->retains);
+    fprintf(f, "    dist = %u\n", fc->byte_distribution);
+    fprintf(f, "    entropy = %u\n", fc->entropy);
+    fprintf(f, "    hd = %u\n", fc->hd);
+    fprintf(f, "    idp = %u\n", fc->idp);
+
+    fprintf(f, "    dns = %u\n", fc->dns);
+    fprintf(f, "    ssh = %u\n", fc->ssh);
+    fprintf(f, "    tls = %u\n", fc->tls);
+    fprintf(f, "    dhcp = %u\n", fc->dhcp);
+    fprintf(f, "    http = %u\n", fc->http);
+    fprintf(f, "    ppi = %u\n", fc->ppi);
+    fprintf(f, "    payload = %u\n", fc->payload);
+}
 
