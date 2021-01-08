@@ -150,7 +150,7 @@ open_pcap_device(char *device){
     pcap_t *pd;
     struct bpf_program fp;
     bpf_u_int32 localnet, netmask;
-    char filter_exp[PCAP_ERRBUF_SIZE], errbuf[PCAP_BUF_SIZE];
+    char filter_exp[PCAP_ERRBUF_SIZE], errbuf[PCAP_ERRBUF_SIZE];
     if(NULL == device){
         err_quit("the device is null", "");
     }
@@ -258,12 +258,13 @@ init_feature_extract_service(){
     if(no_ifs == 0){
         err_quit("this mechine has no network, interface");
     }
-    if(fnet_glb_config.interface == NULL || !strcmp(fnet_glb_config.interface, AUTO_IFF)){
+    /*if(fnet_glb_config.interface == NULL || !strcmp(fnet_glb_config.interface, AUTO_IFF)){
         feature_extract_from_interface(ifl[0].name);
     }
     else{
         feature_extract_from_interface(fnet_glb_config.interface);
-    }    
+    }  */  
+    feature_extract_from_pcap("../test/pcaps/1.pcap");
 }
 // should i use thread? one thread for one device? or any other way?
 /*

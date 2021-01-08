@@ -32,7 +32,7 @@
             interface automatically.  It can also be set to "none", in which
             case the interface must be specified on the attribute
          -->
-        <Interface>auto</Interface>
+        <Interface>eno1</Interface>
         <!-- 
             verbosity = 0 -> silent
             verbosity = 1 -> show debug, info, warnings, errors and critical errors
@@ -43,7 +43,7 @@
             verbosity = 4 -> show errors and critical errors
             verbosity = 5 -> show critical errors only
          -->
-        <Verbosity>2</Verbosity>
+        <Verbosity>4</Verbosity>
 
         <!-- Show Configuration -->
 

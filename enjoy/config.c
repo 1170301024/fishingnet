@@ -290,7 +290,6 @@ static int config_parse_feature_option (struct data_feature_config *config,
  * \param config pointer to configuration structure
  * \return none
  */
-#include    <string.h>
 static void config_set_defaults (fnet_configuration_t *config) {
 
     memset(config, 0x00, sizeof (fnet_configuration_t));

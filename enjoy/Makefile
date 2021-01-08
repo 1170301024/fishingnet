@@ -1,6 +1,5 @@
-
 INCLDDIR = ../include
-CFLAGS = -I $(INCLDDIR) -O2 -Wall
+CFLAGS = --std=gnu99 -I $(INCLDDIR) -O2 -Wall
 
 LADIR = ../lib/joy
 OBJS =  user.o connect_manage.o \

@@ -23,7 +23,7 @@ int cmsockfd;
 void init_udp_connect_service(void *arg){
     char msg[MAX_UDP_MSG];
     int n;
-    socklen_t len;
+    socklen_t len = sizeof (struct sockaddr);
     struct sockaddr_in server_addr, client_addr;
     
     cmsockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -39,6 +39,7 @@ void init_udp_connect_service(void *arg){
 
     // get port from configuration 
     server_addr.sin_port = htons(fnet_glb_config.connect_s_cfg.port);
+   
     
     /* get sin_addr from configuration in two situations
      *     1. address = "anyaddr" 
@@ -48,11 +49,9 @@ void init_udp_connect_service(void *arg){
     // address = "anyaddr"
     if(!strcmp(fnet_glb_config.connect_s_cfg.address, IPv4_ANYADDR)){ 
         server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    }
-    else if(inet_pton(AF_INET, fnet_glb_config.connect_s_cfg.address, &(server_addr.sin_addr)) == -1){
+    } else if(inet_pton(AF_INET, fnet_glb_config.connect_s_cfg.address, &(server_addr.sin_addr)) <= 0){
         err_sys("address error");
     }
-    
     
     if(bind(cmsockfd, (struct sockaddr *)&server_addr, sizeof server_addr) == -1){
         err_sys("bind error");
@@ -65,12 +64,8 @@ void init_udp_connect_service(void *arg){
             err_sys("recvfrom error");
             continue;
         }
-#ifdef LOCAL_NET_ENV
-        inet_pton(AF_INET, "192.168.79.128", &(client_addr.sin_addr.s_addr));
-        client_addr.sin_port = htons(60606);
-#endif
-        printf("Receive a packet from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
         
+        fprintf(stderr, "Receive a packet from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
         parse_udp_connect_msg((struct sockaddr *)&client_addr, sizeof client_addr, msg, n);
     }
     return;

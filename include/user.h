@@ -3,11 +3,13 @@
 
 #include    <netinet/in.h>
 #include    <sys/socket.h>
+#define __USE_UNIX98
 #include    <pthread.h>
 
 #include    "flow.h"
 #include    "proto.h"
 
+#define __USE_UNIX98
 typedef struct user_list_t{
     pthread_rwlock_t rwlock;
     int no_user;
