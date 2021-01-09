@@ -245,7 +245,7 @@ init_feature_extract_service(){
 
     // task_lab
     char path[256];
-    char * data_file = "TWdata200";
+    char * data_file = "TWdata200_1";
     for(int i=1; i<=200; i++)
     {
         sprintf(path, "../../%s/%d/%d.pcap", data_file, i, i);
@@ -291,6 +291,7 @@ static int feature_extract(pcap_t *handle, unsigned int ctx_idx){
 #else
         more = pcap_dispatch(handle, NO_PACKETS_IN_LOOP, joy_libpcap_process_packet, (unsigned char *) ctx->ctx_id);
 #endif
+        fprintf(stdout, "hello\n");
         joy_print_flow_data(ctx_idx, JOY_EXPIRED_FLOWS);
 
 #if (DEBUG_MEASURE_TIME == 1)
