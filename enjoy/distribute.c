@@ -87,7 +87,7 @@ void distribute(){
                 continue;
             }
             
-            //printf("Send a packet to %s:%d\n", inet_ntoa(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_addr), ntohs(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_port));
+            printf("Send a packet to %s:%d\n", inet_ntoa(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_addr), ntohs(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_port));
 
             sendmsg(dsockfd, &(u->user_msghdr), 0);
         }
@@ -119,7 +119,7 @@ int get_flow_record(struct flow_record *record){
         err_msg("string error");
         return -1;
     }
-    puts(json_str);
+   // puts(json_str);
 
     json_str[len-1] = '\0';
     init_flow_record(record);
