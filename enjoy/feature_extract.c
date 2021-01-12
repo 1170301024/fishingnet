@@ -256,7 +256,7 @@ init_feature_extract_service(){
 
     no_ifs = interface_list_get();
     if(no_ifs == 0){
-        err_quit("this mechine has no network, interface");
+        err_quit("this mechine has no network interface");
     }
     /*if(fnet_glb_config.interface == NULL || !strcmp(fnet_glb_config.interface, AUTO_IFF)){
         feature_extract_from_interface(ifl[0].name);

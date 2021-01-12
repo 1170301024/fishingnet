@@ -44,6 +44,7 @@ init_distribute_service(void * arg){
     if(!strcmp(dsc->address, IPv4_ANYADDR)){ 
         daddr.sin_addr.s_addr = htonl(INADDR_ANY);
     }
+    // normal IPv4 address
     else if(inet_pton(AF_INET, dsc->address, &(daddr.sin_addr)) == -1){
         err_sys("address error");
     }
@@ -51,7 +52,7 @@ init_distribute_service(void * arg){
         err_sys("bind error");
         return ;
     }
-    //init_user_list();
+    
     fprintf(stdout, "\nDistribution service initialized\n");
     distribute();
 }
