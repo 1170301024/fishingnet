@@ -40,6 +40,6 @@ nflog.o:
 	cc -c $(CFLAGS) nflog.c
 .PHONY: clean
 clean: 
-	rm *.o ../include/*.gch joy-output*
+	rm *.o
 	rm *.lo
 	rm -r .libs/

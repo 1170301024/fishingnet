@@ -21,7 +21,7 @@ int cmsockfd;
 void *init_udp_connect_service(void *arg){
     char msg[MAX_UDP_MSG];
     int n;
-    socklen_t len;
+    socklen_t len = sizeof (struct sockaddr);
     struct sockaddr_in server_addr, client_addr;
     
     cmsockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -49,10 +49,6 @@ void *init_udp_connect_service(void *arg){
             err_sys("recvfrom error");
             continue;
         }
-#ifdef LOCAL_NET_ENV
-        inet_pton(AF_INET, "192.168.79.128", &(client_addr.sin_addr.s_addr));
-        client_addr.sin_port = htons(60606);
-#endif
         printf("Receive a packet from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
         
         parse_udp_connect_msg((struct sockaddr *)&client_addr, sizeof client_addr, msg, n);
