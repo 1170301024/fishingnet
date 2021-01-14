@@ -1,6 +1,9 @@
 #ifndef _NFLOG_H
 #define _NFLOG_H
 
+/* refs from https://www.tcpdump.org/linktypes/LINKTYPE_NFLOG.html*/
+
+
 #define NFULA_PACKET_HDR		1	/* nflog_packet_hdr_t */
 #define NFULA_MARK			2	/* packet mark from skbuff */
 #define NFULA_TIMESTAMP			3	/* nflog_timestamp_t for skbuff's time stamp */
@@ -23,7 +26,7 @@
 
 
 typedef struct nflog_hdr {
-	unsigned char    nflog_family;	/* address family */
+	unsigned char    nflog_family;	/* address family, Linux AF_value, so it's 2 for IPv4 and 10 for IPv6*/
 	unsigned char		nflog_version;	/* version */
 	unsigned short	nflog_rid;	/* resource ID */
 } nflog_hdr_t;
@@ -46,8 +49,5 @@ struct ethernet{
     char src[6];
     char type[2];
 };
-
-
-
-int parser_nflog(const unsigned char *packet, struct nflog *nflog, int *);
+void nflog_libpcap_process_packet(unsigned char *ctx_index, const struct pcap_pkthdr *header, const unsigned char *packet);
 #endif

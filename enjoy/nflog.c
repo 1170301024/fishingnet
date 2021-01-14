@@ -1,5 +1,5 @@
 
-#include    "../include/nflog.h"
+
 #include    <netinet/in.h>
 #include    <string.h>
 #include    <time.h>
@@ -9,11 +9,14 @@
 
 #include    "../include/enjoy.h"
 #include    "../include/joy/joy_api.h"
-#include    "../include/joy/joy_api_private.h"
-#include    "../include/feature_extract.h"   
+#include    "../include/joy/joy_api_private.h"   
+#include    "../include/nflog.h"
 
-int 
-parser_nflog(const unsigned char *packet, struct nflog *nflog, int * payload_offset){
+/*
+ * parse nflog protocol 
+ */
+static int 
+parse_nflog(const unsigned char *packet, struct nflog *nflog, int * payload_offset){
     int offset = 0;
     unsigned short tlv_len, tlv_type;
 
@@ -38,14 +41,15 @@ parser_nflog(const unsigned char *packet, struct nflog *nflog, int * payload_off
     return 0;
 }
 
-/*
-struct ethernet pad_linker = {
+
+
+static const struct ethernet pad_linker = {
     .dst = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
     .src = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
     .type = {0x08, 0x00}
 };
 
-void task_joy_libpcap_process_packet(unsigned char *ctx_index,
+void nflog_libpcap_process_packet(unsigned char *ctx_index,
                         const struct pcap_pkthdr *header,
                         const unsigned char *packet)
 {
@@ -57,7 +61,7 @@ void task_joy_libpcap_process_packet(unsigned char *ctx_index,
     struct ethernet * linker_addr;
     int payload_offset;
 
-    parser_nflog(packet, &nflog, &payload_offset);
+    parse_nflog(packet, &nflog, &payload_offset);
     
     int payload_tlv_len = nflog.tlvs[NFULA_PAYLOAD].tlv_length;
     if(payload_tlv_len == 0){
@@ -86,15 +90,15 @@ void task_joy_libpcap_process_packet(unsigned char *ctx_index,
 
     unsigned char * new_packet = (unsigned char *)(linker_addr);
     /* make sure we have a packet to process */
-/*    if (packet == NULL) {
+    if (packet == NULL) {
         return;
     }
     /* ctx_index has the int value of the data context
      * This number is between 0 and max configured contexts
      */
- /*   index = (uint64_t)ctx_index;
+    index = (uint64_t)ctx_index;
 
     ctx = joy_index_to_context(index);
     process_packet((unsigned char*)ctx, new_header, new_packet);
     free(new_header);
-}*/
+}

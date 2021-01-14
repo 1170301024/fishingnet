@@ -1,5 +1,7 @@
 #include    <pthread.h>
 #include    <unistd.h>
+#include    <stdio.h>
+#include    <fcntl.h>
 
 #include    "../include/enjoy.h"
 #include    "../include/fishing_net.h"
@@ -13,8 +15,12 @@
 
 
 fnet_configuration_t fnet_glb_config;
+extern FILE * fp_output;
+extern FILE * fp_input;
 
-
+/*
+ * configure system from fishing_net.xml file
+ */
 int 
 system_config(void){
 
@@ -51,36 +57,49 @@ int system_init(){
 
     Pthread_create(&cmtid, NULL, init_udp_connect_service, NULL);
     
+    // create a pipe
     if(pipe(fxd_pipe) == -1){
         err_quit("pipe error");
     }
 
     if((fxpid = fork()) == 0){
         sleep(3);
+        // close the descriptor for reading
         close(fxd_pipe[0]);
-        if(dup2(fxd_pipe[1], STDOUT_FILENO) < 0){
+        fp_output = fdopen(fxd_pipe[1], "w"); 
+        /*if(dup2(fxd_pipe[1], STDOUT_FILENO) < 0){
             err_sys("dup2 error");
             return;
         }
-        
         close(fxd_pipe[1]);
+        */
         init_feature_extract_service();
         return;
     }
 
+    // close the descriptor for writing
     close(fxd_pipe[1]);
-    if(dup2(fxd_pipe[0], STDIN_FILENO) < 0){
+    int flags = fcntl(fxd_pipe[0], F_GETFD, 0);
+    printf("%x", flags);
+    flags &= ~O_NONBLOCK;
+    printf("%x", flags);
+    fcntl(fxd_pipe[0], F_SETFD, flags);
+    fp_input = fdopen(fxd_pipe[0], "r");
+
+    
+    /*if(dup2(fxd_pipe[0], STDIN_FILENO) < 0){
         err_sys("dup2 error");
         return -1;
     }
     close(fxd_pipe[0]);
-    
+    */
     Pthread_create(&dtid, NULL, init_distribute_service, NULL);
     
     Pthread_join(cmtid, NULL);
     Pthread_join(dtid, NULL);
     exit(0);
 }
+
 
 
 int main(){

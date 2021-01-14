@@ -18,6 +18,8 @@ extern fnet_configuration_t fnet_glb_config;
 extern user_list_t work_user_list;
 
 int dsockfd;
+// the FILE pointer contains a file descriptor for pipe reading
+FILE *fp_input;
 
 void *
 init_distribute_service(void * arg){
@@ -91,9 +93,9 @@ void distribute(){
             printf("Send a packet to %s:%d\n", inet_ntoa(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_addr), ntohs(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_port));
 
             sendmsg(dsockfd, &(u->user_msghdr), 0);
-        }
-        pthread_rwlock_unlock(&(work_user_list.rwlock));
-        free_flow_record(&record);
+    }
+    pthread_rwlock_unlock(&(work_user_list.rwlock));
+    free_flow_record(&record);
     }
 }
 
@@ -108,19 +110,22 @@ int get_flow_record(struct flow_record *record){
     int len;
     
     char json_str[65535];
-
-    fgets(json_str, 65535, stdin);
+    char * r = fgets(json_str, 65535, fp_input);
+    /*if(r == NULL){
+        getchar();
+    }*/
     //read(STDIN_FILENO, json_str, 1023);
-    
+    puts("hello");
     len = strlen(json_str);
     if(len <= 1){
         return -1;
     }
+    
     if(len > 65535){
         err_msg("string error");
         return -1;
     }
-   // puts(json_str);
+    puts(json_str);
 
     json_str[len-1] = '\0';
     init_flow_record(record);

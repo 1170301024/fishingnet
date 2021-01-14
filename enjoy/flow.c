@@ -180,10 +180,6 @@ error:
     return -1;
 
 }
-
-void flow_record2json_string(struct flow_record *flow_record, char **str){
-
-}
 /*
 void init_feature(){
     

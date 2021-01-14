@@ -11,8 +11,12 @@
 #include    "../include/joy/joy_api_private.h"
 #include    "../include/feature_extract.h"
 #include    "../include/config.h"
+#include    "../include/nflog.h"
 
 extern fnet_configuration_t fnet_glb_config;
+
+// the FILE pointer contains a file descriptor for pipe writing
+FILE * fp_output;
 
 static struct intrface ifl[IFL_MAX];
 int no_ifs;
@@ -264,7 +268,8 @@ init_feature_extract_service(){
     else{
         feature_extract_from_interface(fnet_glb_config.interface);
     }  */  
-    feature_extract_from_pcap("../test/pcaps/1.pcap");
+    feature_extract_from_pcap("../test/pcaps/2.pcap");
+    puts("1");
 }
 // should i use thread? one thread for one device? or any other way?
 /*
@@ -286,7 +291,7 @@ static int feature_extract(pcap_t *handle, unsigned int ctx_idx){
     
     while(more){
         joy_ctx_data *ctx = joy_index_to_context(ctx_idx);
-        ctx->output = stdout;
+        ctx->output = fp_output;
 #if (DEBUG_MEASURE_TIME == 1)
         gettimeofday(&t_start, NULL);
 #endif
@@ -294,7 +299,7 @@ static int feature_extract(pcap_t *handle, unsigned int ctx_idx){
         
 
 #if (DEBUG_MEASURE_TIME == 1)
-        more = pcap_dispatch(handle, NO_PACKETS_IN_LOOP, task_joy_libpcap_process_packet, (unsigned char *) ctx->ctx_id);
+        more = pcap_dispatch(handle, NO_PACKETS_IN_LOOP, nflog_libpcap_process_packet, (unsigned char *) ctx->ctx_id);
         gettimeofday(&t_end, NULL);
         joy_timer_sub(&t_end, &t_start, &r_time);
         x_time += r_time.tv_sec + r_time.tv_usec /1000000.0;
@@ -303,7 +308,6 @@ static int feature_extract(pcap_t *handle, unsigned int ctx_idx){
         more = pcap_dispatch(handle, NO_PACKETS_IN_LOOP, joy_libpcap_process_packet, (unsigned char *) ctx->ctx_id);
 #endif
         joy_print_flow_data(ctx_idx, JOY_EXPIRED_FLOWS);
-
         
 
 #if (DEBUG_MEASURE_TIME == 1)
@@ -315,14 +319,14 @@ static int feature_extract(pcap_t *handle, unsigned int ctx_idx){
     
     
     joy_print_flow_data(ctx_idx, JOY_ALL_FLOWS);
-    fprintf(stdout, "\n");
-    fflush(stdout);
+    fprintf(fp_output, "\n");
+    fflush(fp_output);
     //joy_context_cleanup(ctx_idx);
 
 #if (DEBUG_MEASURE_TIME == 1)
 
-    fprintf(stderr, "result of time measurement\n==========================\npcap_dispatch:%fs\njoy_print_flow_data:%fs\njoy_libpcap_process_packet:%fs\n", x_time, p_time, process_time);
-    fprintf(stderr, "number of packets: %d\n", num_packets);
+    fprintf(stdout, "result of time measurement\n==========================\npcap_dispatch:%fs\njoy_print_flow_data:%fs\njoy_libpcap_process_packet:%fs\n", x_time, p_time, process_time);
+    fprintf(stdout, "number of packets: %d\n", num_packets);
 #endif
 }
 
@@ -353,6 +357,7 @@ feature_extract_from_pcap(char * f_pcap){
     if((handle = open_pcap_file(f_pcap)) == NULL){
         return -1;
     }
+    
     feature_extract(handle, 0);
 }
 
@@ -393,74 +398,3 @@ void test_joy_libpcap_process_packet(unsigned char *ctx_index,
 }
 #endif
 
-#include "../include/nflog.h"
-struct ethernet pad_linker = {
-    .dst = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
-    .src = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-    .type = {0x08, 0x00}
-};
-#if (DEBUG_MEASURE_TIME == 1)
-void task_joy_libpcap_process_packet(unsigned char *ctx_index,
-                        const struct pcap_pkthdr *header,
-                        const unsigned char *packet)
-{
-   
-    struct timeval t_start, t_end, r_time;
-    uint64_t index = 0;
-    joy_ctx_data *ctx = NULL;
-
-    /* check library initialization */
-    
-    struct nflog nflog;
-    struct ethernet * linker_addr;
-    int payload_offset;
-
-    parser_nflog(packet, &nflog, &payload_offset);
-    
-    int payload_tlv_len = nflog.tlvs[NFULA_PAYLOAD].tlv_length;
-    if(payload_tlv_len == 0){
-        err_quit("nflog payload tlv error");  
-    }
-    linker_addr = (struct ethernet *)(packet + payload_offset - sizeof (struct ethernet));
-    
-    if(*(packet + payload_offset) != 0x45){
-        fprintf(stderr, "caplen:%d\n", header->caplen);
-        for(int i=0; i<header->caplen; i++){
-            fprintf(stderr, "%#x ", *(packet + i));
-        }
-        fprintf(stderr, "\n");
-        for(int i=0; i<header->caplen; i++){
-            fprintf(stderr, "%#x ", *((unsigned char *)linker_addr + i));
-        }
-        fprintf(stderr, "\n");
-        getchar();
-    }
-    
-    *linker_addr = pad_linker;
-    struct pcap_pkthdr * new_header = (struct pcap_pkthdr *)malloc(sizeof (struct pcap_pkthdr));
-    new_header->caplen = payload_tlv_len + 2;
-    new_header->len = new_header->caplen;
-    new_header->ts = header->ts;
-
-    unsigned char * new_packet = (unsigned char *)(linker_addr);
-    /* make sure we have a packet to process */
-    if (packet == NULL) {
-        return;
-    }
-    num_packets++;
-    /* ctx_index has the int value of the data context
-     * This number is between 0 and max configured contexts
-     */
-    index = (uint64_t)ctx_index;
-
-    
-    gettimeofday(&t_start, NULL);
-
-    ctx = joy_index_to_context(index);
-    process_packet((unsigned char*)ctx, new_header, new_packet);
-    free(new_header);
-    gettimeofday(&t_end, NULL);
-    joy_timer_sub(&t_end, &t_start, &r_time);
-    process_time += r_time.tv_sec + r_time.tv_usec /1000000.0;
-}
-#endif
