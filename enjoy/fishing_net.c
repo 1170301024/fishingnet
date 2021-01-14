@@ -79,11 +79,6 @@ int system_init(){
 
     // close the descriptor for writing
     close(fxd_pipe[1]);
-    int flags = fcntl(fxd_pipe[0], F_GETFD, 0);
-    printf("%x", flags);
-    flags &= ~O_NONBLOCK;
-    printf("%x", flags);
-    fcntl(fxd_pipe[0], F_SETFD, flags);
     fp_input = fdopen(fxd_pipe[0], "r");
 
     
