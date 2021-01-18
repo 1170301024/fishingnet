@@ -217,16 +217,16 @@ init_feature_extract_service(){
     memset(&init_data, 0x00, sizeof init_data);
 
 #ifdef ENJOY_DEBUG
-    init_data.verbosity = 4;
+    init_data.verbosity = 1;
 #else
     init_data.verbosity = 4;
 #endif
 
     init_data.max_records = 0;
-    init_data.num_pkts = 50;
+    init_data.num_pkts = 100;
     init_data.contexts = 1;
     init_data.idp = 1400;
-    init_data.inact_timeout=5;
+    init_data.inact_timeout=70;
 
     // turn on all bitmask value except JOY_IPFIX_EXPORT_ON
     // init_data.bitmask = JOY_ALL_ON & (~JOY_IPFIX_EXPORT_ON);
@@ -245,10 +245,11 @@ init_feature_extract_service(){
 
     // task_lab
     char path[256];
-    char * data_file = "FBdata200_3";
-    for(int i=1; i<=200; i++)
+    char * data_file = "TWdata200_2";
+    for(int i=10; i<=10; i++)
     {
         sprintf(path, "../../%s/%d/%d.pcap", data_file, i, i);
+        //sprintf(path, "../test/pcaps/test1.pcap");
         feature_extract_from_pcap(path);
         sleep(2);
     }
@@ -301,7 +302,6 @@ static int feature_extract(pcap_t *handle, unsigned int ctx_idx){
 #endif                                                             
     }
     
-    
     joy_print_flow_data(ctx_idx, JOY_ALL_FLOWS);
     fprintf(stdout, "\n");
     fflush(stdout);
@@ -311,6 +311,9 @@ static int feature_extract(pcap_t *handle, unsigned int ctx_idx){
 
     fprintf(stderr, "result of time measurement\n==========================\npcap_dispatch:%fs\njoy_print_flow_data:%fs\njoy_libpcap_process_packet:%fs\n", x_time, p_time, process_time);
     fprintf(stderr, "number of packets: %d\n", num_packets);
+    joy_ctx_data *ctx = joy_index_to_context(ctx_idx);
+    joy_print_flocap_stats_output(ctx_idx);
+    
 #endif
 }
 

@@ -37,6 +37,7 @@ init_flow_record(struct flow_record *record){
         record->features[i].flags = EMPYT;
         record->features[i].name = NULL;
         record->features[i].value = NULL;
+        empty_fm(record->fm);
     }
     return ; 
 }
@@ -169,7 +170,6 @@ json_string2flow_record(struct flow_record *flow_record, char *str){
         }
         str += value_len + 1; 
     }while(*str != '\0');
-    
     return 0;
 
 error:

@@ -65,6 +65,7 @@ void distribute(){
                 continue;
             }
             
+            
             if((msg_len = construct_feature_msg(u, &record)) < 0){
                 err_msg("construct feature message error");
                 continue;
@@ -148,7 +149,8 @@ int construct_feature_msg(struct user *u, struct flow_record *record){
     for(int cd=0; cd < NO_FEATURE; cd++){
         if(get_fm(u->config->fm, cd) && get_fm(record->fm, cd)){
             if(record->features[cd].flags != NONEMPTY){
-                err_msg("a not non-empty feature is filled into a feature message");
+                printf("%d, %s", cd, feature_name(cd));
+                err_quit("a not non-empty feature is filled into a feature message");
                 return -1;
             }
         

@@ -104,6 +104,7 @@ int json_string2flow_record(struct flow_record *flow_record, char *str);
 void flow_record2json_string(struct flow_record *flow_record, char **str);
 
 int feature_code(char *feature);
+char * feature_name(int code);
 
 #endif
 
