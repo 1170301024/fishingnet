@@ -38,10 +38,19 @@ init_distribute_service(void * arg){
         return ;
     }
     //init_user_list();
-    printf("-=Distribution service initialized=-\n");
+    //printf("-=Distribution service initialized=-\n");
     distribute();
 }
 
+static int construct_pcap_proc_fin_msg(struct user *u){
+    ((char *)(u->user_msghdr.msg_iov[0].iov_base))[0] = MESSAGE;
+    ((char *)(u->user_msghdr.msg_iov[0].iov_base))[1] = PROC_PCAP_FIN;
+    *((short *)((char *)(u->user_msghdr.msg_iov[0].iov_base) + 2)) = 4;
+    for(int i=1; i < u->user_msghdr.msg_iovlen; i++){
+        u->user_msghdr.msg_iov[i].iov_len = 0;
+    }
+    return 4;
+}
 /*
  * 
  * 
@@ -53,14 +62,29 @@ void distribute(){
     int msg_len;
 
     while(1){
-        
-        if(get_flow_record(&record) < 0){
+        int r;
+        if((r = get_flow_record(&record)) < 0){
             //err_msg("next_record error");
             continue;
         }
+        
         pthread_rwlock_rdlock(&(work_user_list.rwlock));
         for(u = l_head(work_user_list); u != NULL; u = u->work_users.next){
            
+            if(r == 1){ // send finish message
+                if((msg_len = construct_pcap_proc_fin_msg(u)) < 0){
+                    err_quit("construct feature finish message error");
+                }
+                if(msg_len > MAX_UDP_MSG){
+                    err_msg("length of udp message beyond MAX_UDP_MSG");
+                    continue;
+                }
+                
+                sendmsg(dsockfd, &(u->user_msghdr), 0);
+                
+                continue;
+            }
+            
             if(0 == user_features_match(record.fm, u->config->fm)){
                 continue;
             }
@@ -81,6 +105,9 @@ void distribute(){
             sendmsg(dsockfd, &(u->user_msghdr), 0);
         }
         pthread_rwlock_unlock(&(work_user_list.rwlock));
+        if(r == 1){
+            break;
+        }
         free_flow_record(&record);
     }
 }
@@ -100,6 +127,7 @@ int get_flow_record(struct flow_record *record){
     fgets(json_str, 65535, stdin);
     //read(STDIN_FILENO, json_str, 1023);
     
+    
     len = strlen(json_str);
     if(len <= 1){
         return -1;
@@ -108,9 +136,13 @@ int get_flow_record(struct flow_record *record){
         err_msg("string error");
         return -1;
     }
-    puts(json_str);
+    //puts(json_str);
 
     json_str[len-1] = '\0';
+
+    if(strcmp(json_str, "PCAP_FIN_STR") == 0){
+        return 1;
+    }
     init_flow_record(record);
     if(json_string2flow_record(record, json_str) < 0){
         return -1;

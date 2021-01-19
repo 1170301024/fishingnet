@@ -11,7 +11,7 @@
 #define FEATURE_DISTRIBUTE_PORT 60721
 #define FEATURE_DISTRIBUTE_IPv4 INADDR_ANY
 
-#define MAX_UDP_MSG 4096
+#define MAX_UDP_MSG 8096
 
 struct feature_option{
     char code;
@@ -70,6 +70,7 @@ struct user_register{
 
 #define GENERAL_CODE  0x01
 // message code
+#define PROC_PCAP_FIN 0x02 // finish process a pcap file
 
 struct protocol{
     char type;

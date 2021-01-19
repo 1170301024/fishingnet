@@ -80,7 +80,7 @@ int add_user(struct user *u){
     if(u->user_state & USER_WORKING){
         add_work_user(u);
     }
-    printf("added a new working  user\n");
+   // printf("added a new working  user\n");
     return 0;
 }
 

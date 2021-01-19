@@ -42,14 +42,14 @@ void *init_udp_connect_service(void *arg){
         return ;
     }
     init_user_list();
-    printf("Initialization of connection service completed, waiting for user request\n");
+    //printf("Initialization of connection service completed, waiting for user request\n");
     for( ; ; ){
         n = recvfrom(cmsockfd, msg, MAX_UDP_MSG, 0, (struct sockaddr*)&client_addr, &len);
         if(n < 0){
             err_sys("recvfrom error");
             continue;
         }
-        printf("Receive a packet from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        //printf("Receive a packet from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
         
         parse_udp_connect_msg((struct sockaddr *)&client_addr, sizeof client_addr, msg, n);
     }
@@ -85,6 +85,7 @@ static void parse_udp_connect_msg(struct sockaddr *addr, int addr_len, char *msg
             break;
         case RESTORE:
             process_restore(addr); 
+            pthread_exit(0);
             break;
         case CONFIG:
             process_config(addr, p.data, len - CHEADER_LEN);
@@ -129,7 +130,7 @@ static void process_connect(struct sockaddr *addr, int addr_len){
     
 #ifdef ENJOY_DEBUG
     struct sockaddr_in *uaddr = (struct sockaddr_in*)(u->user_msghdr.msg_name);
-    printf("%s:%d is connecting to server\n", inet_ntoa(uaddr->sin_addr), ntohs(uaddr->sin_port));
+    //printf("%s:%d is connecting to server\n", inet_ntoa(uaddr->sin_addr), ntohs(uaddr->sin_port));
 #endif
     response(addr, sizeof (*addr), CONNECT_RSP, CMRSP_OK, NULL, 0);
     return ;
@@ -245,7 +246,7 @@ static void process_config(struct sockaddr *addr, char *cfg_data, int cfg_data_l
         b_count++;
     }while(ft_count != no_ft);
 
-    printf("%d, %d\n", b_count, cfg_data_len);
+    //printf("%d, %d\n", b_count, cfg_data_len);
     // the function does not change the user state to USER_CONFIGURED, it exits directly to invalidate the previously settings
     if((b_count + sizeof no_ft) > cfg_data_len){
         err_msg("config message error");

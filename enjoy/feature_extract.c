@@ -15,6 +15,7 @@
 static struct intrface ifl[IFL_MAX];
 int no_ifs;
 int snaplen = 65535;
+extern char *pcap_path;
 
 
 #if (DEBUG_MEASURE_TIME == 1)
@@ -217,7 +218,7 @@ init_feature_extract_service(){
     memset(&init_data, 0x00, sizeof init_data);
 
 #ifdef ENJOY_DEBUG
-    init_data.verbosity = 1;
+    init_data.verbosity = 4;
 #else
     init_data.verbosity = 4;
 #endif
@@ -241,18 +242,14 @@ init_feature_extract_service(){
     }
 
     no_ifs = interface_list_get();
-    print_interfaces(stderr, no_ifs);
+    //print_interfaces(stderr, no_ifs);
 
     // task_lab
-    char path[256];
-    char * data_file = "TWdata200_2";
-    for(int i=10; i<=10; i++)
-    {
-        sprintf(path, "../../%s/%d/%d.pcap", data_file, i, i);
-        //sprintf(path, "../test/pcaps/test1.pcap");
-        feature_extract_from_pcap(path);
-        sleep(2);
+    if(pcap_path == NULL){
+        err_quit("pcap_path is NULL");
     }
+    feature_extract_from_pcap(pcap_path);
+      
     // feature_extract_from_pcap("../test/pcaps/1.pcap");
     //feature_extract_from_interface(ifl[0].name);
 }
@@ -303,16 +300,21 @@ static int feature_extract(pcap_t *handle, unsigned int ctx_idx){
     }
     
     joy_print_flow_data(ctx_idx, JOY_ALL_FLOWS);
+    
+    fprintf(stdout, "PCAP_FIN_STR\n");
     fprintf(stdout, "\n");
     fflush(stdout);
     //joy_context_cleanup(ctx_idx);
-
+    
 #if (DEBUG_MEASURE_TIME == 1)
 
-    fprintf(stderr, "result of time measurement\n==========================\npcap_dispatch:%fs\njoy_print_flow_data:%fs\njoy_libpcap_process_packet:%fs\n", x_time, p_time, process_time);
-    fprintf(stderr, "number of packets: %d\n", num_packets);
+    //fprintf(stderr, "result of time measurement\n==========================\npcap_dispatch:%fs\njoy_print_flow_data:%fs\njoy_libpcap_process_packet:%fs\n", x_time, p_time, process_time);
+    //fprintf(stderr, "number of packets: %d\n", num_packets);
     joy_ctx_data *ctx = joy_index_to_context(ctx_idx);
+    ctx->output = stderr;
+    fprintf(stderr, "Info: ");
     joy_print_flocap_stats_output(ctx_idx);
+    return 0;
     
 #endif
 }

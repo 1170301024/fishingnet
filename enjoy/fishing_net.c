@@ -10,7 +10,14 @@
 #include    "../include/fnetthread.h"
 #include    "../include/error.h"
 
-int main(){
+char *pcap_path;
+
+int main(int args, char *argv[]){
+    if (args != 2){
+        err_quit("fishingnet arguments error");
+    }
+    pcap_path = argv[1];
+
     system_init();
 }
 
@@ -24,7 +31,7 @@ int system_init(){
     }
 
     Pthread_create(&cmtid, NULL, init_udp_connect_service, NULL);
-    printf("connect service created\n");
+    //fprintf(stderr, "connect service created\n");
     
    // sleep(5);
     if(pipe(fxd_pipe) == -1){
@@ -52,7 +59,7 @@ int system_init(){
     close(fxd_pipe[0]);
     
     Pthread_create(&dtid, NULL, init_distribute_service, NULL);
-    printf("distribute service created\n");
+    //printf("distribute service created\n");
     
     Pthread_join(cmtid, NULL);
     Pthread_join(dtid, NULL);
