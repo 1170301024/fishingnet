@@ -69,7 +69,12 @@ struct user_register{
 #define MESSAGE 0x04
 
 #define GENERAL_CODE  0x01
-// message code
+/* message code */
+// finish processing a pcap file
+#define PROTO_CODE_MSG_PCAP_FIN 0x2
+
+// a error was encountered while processing pcap file
+#define PROTO_CODE_MSG_PCAP_ERR 0x3
 
 struct protocol{
     char type;

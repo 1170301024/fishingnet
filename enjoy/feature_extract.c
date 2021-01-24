@@ -11,6 +11,7 @@
 #include    "../include/joy/joy_api_private.h"
 #include    "../include/feature_extract.h"
 #include    "../include/config.h"
+#include    "../include/const.h"
 #include    "../include/nflog.h"
 
 extern fnet_configuration_t fnet_glb_config;
@@ -269,7 +270,7 @@ init_feature_extract_service(){
         feature_extract_from_interface(fnet_glb_config.interface);
     }  */  
     feature_extract_from_pcap("../test/pcaps/2.pcap");
-    puts("1");
+    fprintf(fp_output, EXTRACTOR_PROC_FIN_STR);
 }
 // should i use thread? one thread for one device? or any other way?
 /*
@@ -319,6 +320,8 @@ static int feature_extract(pcap_t *handle, unsigned int ctx_idx){
     
     
     joy_print_flow_data(ctx_idx, JOY_ALL_FLOWS);
+    
+    fprintf(fp_output, EXTRACTOR_PCAP_FIN_STR);
     fprintf(fp_output, "\n");
     fflush(fp_output);
     //joy_context_cleanup(ctx_idx);

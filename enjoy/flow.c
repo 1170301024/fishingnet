@@ -37,6 +37,7 @@ init_flow_record(struct flow_record *record){
         record->features[i].flags = EMPYT;
         record->features[i].name = NULL;
         record->features[i].value = NULL;
+        empty_fm(record->fm);
     }
     return ; 
 }

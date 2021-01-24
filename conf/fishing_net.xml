@@ -12,7 +12,21 @@
     <DistributeService address="anyaddr" port="60721"/>
 
     <!--"PcapHander" is used for handle pcap file uploaded from user-->
-    <PcapHandler avaliable="false" directory="../directory/pcaps">
+    <PcapHandler avaliable="false", auto_handle_directory="../pcaps">
+        <directory>
+            <path></path>
+            <!-- process the file with the suffix, others will be ignored -->
+            <suffix></suffix> 
+            <!-- ethernet and nflog -->
+            <linker_type></linker_type>
+        </directory>
+
+        <file>
+            <path></path>
+            <!-- ethernet nflog -->
+            <linker_type></linker_type>
+        </file>
+
     </PcapHandler>
 
     <Configuration>

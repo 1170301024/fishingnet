@@ -13,6 +13,7 @@ extern struct user *user_list_tail;
 #define user_features_match(rm, um) (low_feature_match(rm, um) && mid_feature_match(rm, um) && high_feature_match(rm, um))
 
 void *init_distribute_service(void *);
+void *shutdown_distribute_service();
 
 void distribute();
 int get_flow_record(struct flow_record *record);

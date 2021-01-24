@@ -12,6 +12,7 @@
 #include    "../include/feature.h"
 #include    "../include/user.h"
 #include    "../include/flow.h"
+#include    "../include/const.h"
 #include    "../include/config.h"
    
 extern fnet_configuration_t fnet_glb_config;
@@ -59,6 +60,11 @@ init_distribute_service(void * arg){
     distribute();
 }
 
+void *
+shutdown_distribute_service(){
+    close(dsockfd);
+    pthread_exit(0);
+}
 /*
  * 
  * 
@@ -68,20 +74,22 @@ void distribute(){
     struct flow_record record;
     struct user *u;
     int msg_len;
+    int rc;
 
     while(1){
         
-        if(get_flow_record(&record) < 0){
+        if((rc = get_flow_record(&record)) < 0){
             //err_msg("next_record error");
             continue;
         }
         pthread_rwlock_rdlock(&(work_user_list.rwlock));
         for(u = l_head(work_user_list); u != NULL; u = u->work_users.next){
+            
             if(0 == user_features_match(record.fm, u->config->fm)){
                 continue;
             }
             if((msg_len = construct_feature_msg(u, &record)) < 0){
-                err_msg("construct feature message error");
+                err_quit("construct feature message error");
                 continue;
             }
 
@@ -110,13 +118,13 @@ int get_flow_record(struct flow_record *record){
     int len;
     
     char json_str[65535];
-    char * r = fgets(json_str, 65535, fp_input);
-    /*if(r == NULL){
-        getchar();
-    }*/
+    while(fgets(json_str, 65535, fp_input) == NULL){
+        clearerr(fp_input);
+    }
+    
     //read(STDIN_FILENO, json_str, 1023);
-    puts("hello");
     len = strlen(json_str);
+    
     if(len <= 1){
         return -1;
     }
