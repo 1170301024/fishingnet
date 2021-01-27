@@ -19,12 +19,7 @@ int system_init(){
     int rc, fxpid;
     int fxd_pipe[2];
 
-    if(init_user_list() != 0){
-        err_quit("init user list error");
-    }
 
-    Pthread_create(&cmtid, NULL, init_udp_connect_service, NULL);
-    printf("connect service created\n");
     
    // sleep(5);
     if(pipe(fxd_pipe) == -1){
@@ -54,7 +49,7 @@ int system_init(){
     Pthread_create(&dtid, NULL, init_distribute_service, NULL);
     printf("distribute service created\n");
     
-    Pthread_join(cmtid, NULL);
+ );
     Pthread_join(dtid, NULL);
     exit(0);
 }

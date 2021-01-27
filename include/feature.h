@@ -1,16 +1,29 @@
 #ifndef _FEATURE_H
 #define _FEATURE_H
 
-extern int no_user;
-extern struct user *user_list;
-extern struct user *user_list_tail;
+struct feature{
+    unsigned char ft_code;
+    unsigned short ft_len; // length of feature string
+    char * ft_val;  // feature string;
+};
+
+struct feature_set{
+    int no_ft;
+    unsigned char f_feature[NO_FEATURE + 1];
+    struct feature *features[NO_FEATURE + 1];
+};
+
+#define empty_feature_set(fsp)   do{      \
+                                    for(int i=0; i<=NO_FEATURE; i++){ \
+                                        fsp->f_feature[i] = 0; \
+                                        fsp->features[i] = NULL; \
+                                    }   \
+                                    fsp->no_ft = 0;   \
+                                }while(0);
 
 
-#define low_feature_match(rm, um) ((((rm).fm_low) & ((um).fm_low)) == ((um).fm_low))
-#define mid_feature_match(rm, um) ((((rm).fm_mid) & ((um).fm_mid)) == ((um).fm_mid))
-#define high_feature_match(rm, um) ((((rm).fm_high) & ((um).fm_high)) == ((um).fm_high))
-// true if the features of user included in the features of flow record 
-#define user_features_match(rm, um) (low_feature_match(rm, um) && mid_feature_match(rm, um) && high_feature_match(rm, um))
+typedef void (*feature_handler)(const unsigned char *, struct feature_set*);
+
 
 void *init_distribute_service(void *);
 

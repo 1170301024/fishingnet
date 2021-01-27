@@ -1,9 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "../include/flow.h"
-#include "../include/test.h"
-#include "../include/error.h"
+
+
+#include    "../include/enjoy.h"
+#include    "../include/feature.h"
+#include    "../include/flow.h"
+#include    "../include/test.h"
+#include    "../include/error.h"
 
 static const char *features[NO_FEATURE+1] = {
     [0]= NULL, [1]="sa", [2]="da", [3]="pr",
@@ -183,6 +187,55 @@ error:
 
 void flow_record2json_string(struct flow_record *flow_record, char **str){
 
+}
+
+static int 
+get_flow_record(struct flow_record *record){
+    
+    int len;
+    
+    char json_str[65535];
+
+    fgets(json_str, 65535, stdin);
+    //read(STDIN_FILENO, json_str, 1023);
+    
+    len = strlen(json_str);
+    if(len <= 1){
+        return -1;
+    }
+    if(len > 65535){
+        err_msg("string error");
+        return -1;
+    }
+    puts(json_str);
+
+    json_str[len-1] = '\0';
+    init_flow_record(record);
+    if(json_string2flow_record(record, json_str) < 0){
+        return -1;
+    }
+    return 0;
+}
+
+void 
+flow_distribute(feature_handler handler){
+    struct flow_record record;
+    struct user *u;
+    int msg_len;
+
+    while(1){
+        
+        if(get_flow_record(&record) < 0){
+            //err_msg("next_record error");
+            continue;
+        }
+        struct feature_set *fts = (struct feature_set*)malloc(sizeof (struct feature_set));
+        if(fts == NULL){
+            err_quit("malloc error");
+        }
+        handler(NULL, fts);
+        
+    }
 }
 /*
 void init_feature(){
