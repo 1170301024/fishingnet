@@ -49,7 +49,8 @@ static const struct ethernet pad_linker = {
     .type = {0x08, 0x00}
 };
 
-void nflog_libpcap_process_packet(unsigned char *ctx_index,
+void 
+nflog_libpcap_process_packet(unsigned char *ctx_index,
                         const struct pcap_pkthdr *header,
                         const unsigned char *packet)
 {

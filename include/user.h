@@ -42,6 +42,8 @@ struct user_feature{
 
 #define WORKING_USER_STATE (USER_CONNECTED | USER_LOGGED | USER_CONFIGURED | USER_WORKING)
 
+#define USER_DUMP_FILE "userinfo.tdb"
+
 struct user{
     unsigned int id;
     pthread_rwlock_t rwlock; 
@@ -63,7 +65,7 @@ struct user* new_user();
 
 int add_user(struct user *u);
 void delete_user(struct user *u);
-void dump_user(struct user *u);
+int dump_user(struct user *u);
 void restore_user(struct user *u);
 struct user* get_users_from_tdb();
 

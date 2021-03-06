@@ -13,11 +13,14 @@
 #include    "../include/config.h"
 #include    "../include/const.h"
 #include    "../include/nflog.h"
+#include    "../include/error.h"
 
-extern fnet_configuration_t fnet_glb_config;
+extern fnet_configuration_t * fnet_glb_config;
+
+extern FILE * info;
 
 // the FILE pointer contains a file descriptor for pipe writing
-FILE * fp_output;
+FILE * flow_pipe_out;
 
 static struct intrface ifl[IFL_MAX];
 int no_ifs;
@@ -144,6 +147,7 @@ interface_list_get(void) {
 
     if (num_ifs == 0) {
        fprintf(stderr, "No suitable interfaces found.\n\n");
+       return -1;
     }
 
     pcap_freealldevs(alldevs);
@@ -220,12 +224,13 @@ open_pcap_file(char *file_name){
 int 
 init_feature_extract_service(){
     joy_init_t init_data;
+    char * logfile = NULL;
 
-    struct data_feature_config *dfc = &fnet_glb_config.data_feature_cfg;
+    struct data_feature_config *dfc = &(fnet_glb_config->data_feature_cfg);
     memset(&init_data, 0x00, sizeof init_data);
 
 
-    init_data.verbosity = fnet_glb_config.verbosity;
+    init_data.verbosity = fnet_glb_config->verbosity;
     init_data.max_records = 0; // export all records into one file(pipe)
     init_data.num_pkts = dfc->num_pkts;
     init_data.contexts = 1;
@@ -252,8 +257,12 @@ init_feature_extract_service(){
     if(dfc->salt) init_data.bitmask |= JOY_SALT_ON;
     if(dfc->payload) init_data.bitmask |= JOY_PAYLOAD_ON;
     
-    if(joy_initialize(&init_data, NULL, NULL, NULL) != 0){
-        err_quit("=>Joy initialized failed<=", "");
+    if(strcmp(fnet_glb_config->logfile, "stderr")){
+        logfile = fnet_glb_config->logfile;
+    }
+
+    if(joy_initialize(&init_data, NULL, NULL, logfile) != 0){
+        fnet_log_err("Joy initialized failed");
     }
     for(int n=0; n < init_data.contexts; n++){
         joy_print_config(n, JOY_JSON_FORMAT);
@@ -261,7 +270,7 @@ init_feature_extract_service(){
 
     no_ifs = interface_list_get();
     if(no_ifs == 0){
-        err_quit("this mechine has no network interface");
+        return -1;
     }
     /*if(fnet_glb_config.interface == NULL || !strcmp(fnet_glb_config.interface, AUTO_IFF)){
         feature_extract_from_interface(ifl[0].name);
@@ -270,7 +279,6 @@ init_feature_extract_service(){
         feature_extract_from_interface(fnet_glb_config.interface);
     }  */  
     feature_extract_from_pcap("../test/pcaps/2.pcap");
-    fprintf(fp_output, EXTRACTOR_PROC_FIN_STR);
 }
 // should i use thread? one thread for one device? or any other way?
 /*
@@ -286,13 +294,13 @@ static int feature_extract(pcap_t *handle, unsigned int ctx_idx){
     struct timeval t_start, t_end, r_time;
 #endif
     if(handle == NULL){
-        err_msg("argument error:null");
+        fnet_log_warn("argument error:null");
         return;
     }
     
     while(more){
         joy_ctx_data *ctx = joy_index_to_context(ctx_idx);
-        ctx->output = fp_output;
+        ctx->output = flow_pipe_out;
 #if (DEBUG_MEASURE_TIME == 1)
         gettimeofday(&t_start, NULL);
 #endif
@@ -321,9 +329,9 @@ static int feature_extract(pcap_t *handle, unsigned int ctx_idx){
     
     joy_print_flow_data(ctx_idx, JOY_ALL_FLOWS);
     
-    fprintf(fp_output, EXTRACTOR_PCAP_FIN_STR);
-    fprintf(fp_output, "\n");
-    fflush(fp_output);
+    fprintf(flow_pipe_out, EXTRACTOR_PCAP_FIN_STR);
+    fprintf(flow_pipe_out, "\n");
+    fflush(flow_pipe_out);
     //joy_context_cleanup(ctx_idx);
 
 #if (DEBUG_MEASURE_TIME == 1)
@@ -336,13 +344,12 @@ static int feature_extract(pcap_t *handle, unsigned int ctx_idx){
 int 
 feature_extract_from_interface(char *device){
     if(NULL == device){
-        err_msg("argument error:null");
+        fnet_log_err("argument error:null");
         return -1;
     }
 
     pcap_t * handle;
     if((handle = open_pcap_device(device)) == NULL){
-        err_msg("error");
         return -1;
     }
     feature_extract(handle, 0);
@@ -352,7 +359,7 @@ feature_extract_from_interface(char *device){
 int 
 feature_extract_from_pcap(char * f_pcap){
     if(NULL == f_pcap){
-        err_msg("argument error:null");
+        fnet_log_err("argument error:null");
         return -1;
     }
 
@@ -362,6 +369,7 @@ feature_extract_from_pcap(char * f_pcap){
     }
     
     feature_extract(handle, 0);
+    fprintf(flow_pipe_out, EXTRACTOR_PROC_FIN_STR);
 }
 
 

@@ -4,18 +4,13 @@
 #include    <string.h>
 #include    <pthread.h>
 
-
-
-
 user_list_t user_list;
 user_list_t work_user_list;
 
 
-
-
 int init_user_list(){
     user_list.no_user = 0;
-    l_head(user_list) = l_tail(user_list) =  NULL;    
+    l_head(user_list) = l_tail(user_list) =  NULL;  
 
     work_user_list.no_user = 0;
     l_head(work_user_list) = l_tail(work_user_list) = NULL;
@@ -91,12 +86,39 @@ void delete_user(struct user *u){
 
 }
 
+static int 
+search_user_with_addr_from_tdb(struct sockaddr *addr){
+    struct user *u;
+    FILE * tdb = NULL;
+    tdb = fopen(USER_DUMP_FILE, "r");
+    if (tdb == NULL){
+        err_msg("open file to dump user information fail");
+        return -1;
+    }
+
+}
+
 /*
  * dump user information to disk,or save the user information to database.
  * 
  */
-void dump_user(struct user *u){
+int
+dump_user(struct user *u){
+    FILE * tdb = fopen(USER_DUMP_FILE, "w+");
+    if (tdb == NULL){
+        err_msg("open file to dump user information fail");
+        return -1;
+    }
+    // dump user struct 
+    if (fwrite(u, sizeof(struct user), 1, tdb) != 1){
+        err_sys("fwrite error");
+    } 
 
+    // dump configuration information
+    if (fwrite(u->config, sizeof(struct user), 1, tdb) != 1){
+        err_sys("fwrite error");
+    } 
+    return 0;
 }
 
 /*

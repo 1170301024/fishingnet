@@ -1,7 +1,9 @@
 #include    <pthread.h>
 #include    <unistd.h>
+#include    <string.h>
 #include    <stdio.h>
 #include    <fcntl.h>
+#include    <errno.h>
 
 #include    "../include/enjoy.h"
 #include    "../include/fishing_net.h"
@@ -13,26 +15,34 @@
 #include    "../include/error.h"
 #include    "../include/config.h"
 
+/* file destination variables */
+FILE *info = NULL;
 
-fnet_configuration_t fnet_glb_config;
-extern FILE * fp_output;
-extern FILE * fp_input;
+// fishing net global configuration
+fnet_configuration_t * fnet_glb_config;
+
+// fishing net status
+fnet_stats_t * stats;
+
+extern FILE * flow_pipe_out;
+extern FILE * flow_pipe_in;
 
 /*
  * configure system from fishing_net.xml file
  */
 int 
 system_config(void){
-
     int no_ifs;
-    config_from_xml(&fnet_glb_config, "../conf/fishing_net.xml");
+
+    fnet_glb_config = (fnet_configuration_t *)calloc(1, sizeof (fnet_configuration_t));
+    config_from_xml(fnet_glb_config, "../conf/fishing_net.xml");
 
     // print configuration
-    if(fnet_glb_config.show_config){
-        fnet_config_print(stderr, &fnet_glb_config);
+    if(fnet_glb_config->show_config){
+        fnet_config_print(stderr, fnet_glb_config);
     }
     no_ifs = interface_list_get();
-    if(fnet_glb_config.show_interface)
+    if(fnet_glb_config->show_interface)
         print_interfaces(stderr, no_ifs);
     return 0;
     
@@ -50,6 +60,20 @@ int system_init(){
     int rc, fxpid;
     int fxd_pipe[2];
 
+    system_config();
+
+    /* set 'info' to stderr as a precaution */
+    info = stderr;
+
+    /* setup the logfile */
+    if (strcmp(fnet_glb_config->logfile, "stderr")) {
+        info = fopen(fnet_glb_config->logfile, "a");
+        if (info == NULL) {
+            info = stderr;
+            fnet_log_err("could not open log file %s (%s)", fnet_glb_config->logfile, strerror(errno));
+            return failure;
+        }
+    } 
     
     if(init_user_list() != 0){
         err_quit("init user list error");
@@ -66,7 +90,7 @@ int system_init(){
         sleep(3);
         // close the descriptor for reading
         close(fxd_pipe[0]);
-        fp_output = fdopen(fxd_pipe[1], "w"); 
+        flow_pipe_out = fdopen(fxd_pipe[1], "w"); 
         /*if(dup2(fxd_pipe[1], STDOUT_FILENO) < 0){
             err_sys("dup2 error");
             return;
@@ -79,7 +103,7 @@ int system_init(){
 
     // close the descriptor for writing
     close(fxd_pipe[1]);
-    fp_input = fdopen(fxd_pipe[0], "r");
+    flow_pipe_in = fdopen(fxd_pipe[0], "r");
 
     
     /*if(dup2(fxd_pipe[0], STDIN_FILENO) < 0){
@@ -98,7 +122,5 @@ int system_init(){
 
 
 int main(){
-    system_config();
-    system_init();
-    return 0;
+    return system_init();
 }

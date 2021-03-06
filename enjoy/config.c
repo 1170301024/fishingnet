@@ -44,7 +44,7 @@
 #include "joy_config.h"
 #endif
 #include <stdio.h>
-#include <stdlib.h>       
+#include <stdlib.h>    
 #include <limits.h>
 #include <ctype.h> 
 #include <libxml/parser.h>
@@ -293,7 +293,7 @@ static int config_parse_feature_option (struct data_feature_config *config,
 static void config_set_defaults (fnet_configuration_t *config) {
 
     memset(config, 0x00, sizeof (fnet_configuration_t));
-    config->logfile = "./fnet.log";
+    config->logfile = "stderr";
     config->verbosity = 4;
     config->show_config = 0;
     config->show_interface = 0;
@@ -461,6 +461,7 @@ int config_from_xml(fnet_configuration_t *config, const char *fname){
         {
             if(xmlHasProp(node, BAD_CAST "address")){
                 config->connect_s_cfg.address = xmlGetProp(node, BAD_CAST "address");
+                puts(xmlGetProp(node, BAD_CAST "address"));
             }
             if(xmlHasProp(node, BAD_CAST "port")){
                 parse_shortval(&(config->connect_s_cfg.port), xmlGetProp(node, BAD_CAST "port"), 0, 65535);

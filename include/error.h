@@ -25,7 +25,7 @@ typedef enum fnet_log_level {
 #define FNET_LOG_CRIT_STR JOY_LOG_CRIT_STR
 
 #define fnet_log_debug(...) { \
-    if (fnet_glb_config->verbosity != FNET_LOG_OFF && glb_config->verbosity <= FNET_LOG_DEBUG) { \
+    if (fnet_glb_config->verbosity != FNET_LOG_OFF && fnet_glb_config->verbosity <= FNET_LOG_DEBUG) { \
             char log_ts[JOY_TIMESTAMP_LEN]; \
             joy_log_timestamp(log_ts); \
             fprintf(info, "%s: ", log_ts); \
@@ -36,7 +36,7 @@ typedef enum fnet_log_level {
 }
 
 #define fnet_log_info(...) { \
-        if (fnet_glb_config->verbosity != FNET_LOG_OFF && glb_config->verbosity <= FNET_LOG_INFO) { \
+        if (fnet_glb_config->verbosity != FNET_LOG_OFF && fnet_glb_config->verbosity <= FNET_LOG_INFO) { \
             char log_ts[JOY_TIMESTAMP_LEN]; \
             joy_log_timestamp(log_ts); \
             fprintf(info, "%s: ", log_ts); \
@@ -46,8 +46,8 @@ typedef enum fnet_log_level {
         } \
 }
 
-#define fnet_log_warn(...) \
-        if (fnet_glb_config->verbosity != FNET_LOG_OFF && glb_config->verbosity <= FNET_LOG_WARN) { \
+#define fnet_log_warn(...) {\
+        if (fnet_glb_config->verbosity != FNET_LOG_OFF && fnet_glb_config->verbosity <= FNET_LOG_WARN) { \
             char log_ts[JOY_TIMESTAMP_LEN]; \
             joy_log_timestamp(log_ts); \
             fprintf(info, "%s: ", log_ts); \
@@ -57,8 +57,8 @@ typedef enum fnet_log_level {
         } \
 }
 
-#define fnet_log_err(...) \
-        if (fnet_glb_config->verbosity != FNET_LOG_OFF && glb_config->verbosity <= FNET_LOG_ERR) { \
+#define fnet_log_err(...) {\
+        if (fnet_glb_config->verbosity != FNET_LOG_OFF && fnet_glb_config->verbosity <= FNET_LOG_ERR) { \
             char log_ts[JOY_TIMESTAMP_LEN]; \
             joy_log_timestamp(log_ts); \
             fprintf(info, "%s: ", log_ts); \
@@ -68,8 +68,8 @@ typedef enum fnet_log_level {
         } \
 }
 
-#define fnet_log_crit(...) \
-        if (fnet_glb_config->verbosity != FNET_LOG_OFF && glb_config->verbosity <= FNET_LOG_CRIT) { \
+#define fnet_log_crit(...) {\
+        if (fnet_glb_config->verbosity != FNET_LOG_OFF && fnet_glb_config->verbosity <= FNET_LOG_CRIT) { \
             char log_ts[JOY_TIMESTAMP_LEN]; \
             joy_log_timestamp(log_ts); \
             fprintf(info, "%s: ", log_ts); \

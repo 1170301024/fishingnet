@@ -4,6 +4,7 @@
 #include    <sys/param.h>
 #include    <string.h>
 #include    <stdio.h>
+#include    <errno.h>
 
 #include    "../include/enjoy.h"
 #include    "../include/proto.h"
@@ -17,7 +18,8 @@
  * server have different ip, then which ip should be chosen to send from server. 
  */
 
-extern fnet_configuration_t fnet_glb_config;
+extern fnet_configuration_t * fnet_glb_config;
+extern FILE * info;
 int cmsockfd;
 
 void init_udp_connect_service(void *arg){
@@ -28,7 +30,7 @@ void init_udp_connect_service(void *arg){
     
     cmsockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if(-1 == cmsockfd){
-        err_sys("socket error");
+        fnet_log_err("socket error: %s", strerror(errno));
         return ; 
     }
 
@@ -38,7 +40,7 @@ void init_udp_connect_service(void *arg){
     server_addr.sin_family = AF_INET; 
 
     // get port from configuration 
-    server_addr.sin_port = htons(fnet_glb_config.connect_s_cfg.port);
+    server_addr.sin_port = htons(fnet_glb_config->connect_s_cfg.port);
    
     
     /* get sin_addr from configuration in two situations
@@ -47,25 +49,27 @@ void init_udp_connect_service(void *arg){
      */  
 
     // address = "anyaddr"
-    if(!strcmp(fnet_glb_config.connect_s_cfg.address, IPv4_ANYADDR)){ 
+    if(!strcmp(fnet_glb_config->connect_s_cfg.address, IPv4_ANYADDR)){ 
         server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    } else if(inet_pton(AF_INET, fnet_glb_config.connect_s_cfg.address, &(server_addr.sin_addr)) <= 0){
-        err_sys("address error");
+    } else if(inet_pton(AF_INET, fnet_glb_config->connect_s_cfg.address, &(server_addr.sin_addr)) <= 0){
+        fnet_log_err("address error: ", strerror(errno));
+        return;
     }
     
     if(bind(cmsockfd, (struct sockaddr *)&server_addr, sizeof server_addr) == -1){
-        err_sys("bind error");
+        fnet_log_err("bind error: ", strerror(errno));
         return ;
     }
-    printf("\nInitialization of connection service completed, waiting for user request\n");
+    fnet_log_info("Initialization of connection service completed, waiting for user request");
+    fflush(info);
     for( ; ; ){
         n = recvfrom(cmsockfd, msg, MAX_UDP_MSG, 0, (struct sockaddr*)&client_addr, &len);
         if(n < 0){
-            err_sys("recvfrom error");
+            fnet_log_err("recvfrom error: ", strerror(errno));
             continue;
         }
         
-        fprintf(stderr, "Receive a packet from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        fnet_log_info("Receive a packet from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
         parse_udp_connect_msg((struct sockaddr *)&client_addr, sizeof client_addr, msg, n);
     }
     return;
@@ -79,7 +83,7 @@ static void parse_udp_connect_msg(struct sockaddr *addr, int addr_len, char *msg
     p.proto_length = ntohs(*((short*)(msg+2)));
 
     if(p.proto_length != len){
-        err_msg("payload length error");
+        fnet_log_err("payload length error");
         return ;
     }
     if(p.proto_length > CHEADER_LEN){
@@ -107,7 +111,7 @@ static void parse_udp_connect_msg(struct sockaddr *addr, int addr_len, char *msg
         case RESPONSE:
             break;
         default:
-            err_msg("protocol type error");
+            fnet_log_err("fishing net protocol type error");
             return;
     }
     return ;
@@ -135,22 +139,21 @@ static void process_connect(struct sockaddr *addr, int addr_len){
     // we don't have a log action, so we set the state USER_CONNECTED and USER_LOGGED
     u->user_state = USER_CONNECTED | USER_LOGGED;
     if(-1 == time(u->last_ctime)){
-        err_msg("time error");
+        fnet_log_err("time error");
         goto err_rsp;
     }
     if(add_user(u) < 0){
         goto err_rsp;
     }
     
-#ifdef ENJOY_DEBUG
     struct sockaddr_in *uaddr = (struct sockaddr_in*)(u->user_msghdr.msg_name);
-    printf("%s:%d is connecting to server\n", inet_ntoa(uaddr->sin_addr), ntohs(uaddr->sin_port));
-#endif
+    fnet_log_info("%s:%d is connecting to server\n", inet_ntoa(uaddr->sin_addr), ntohs(uaddr->sin_port));
+
     response(addr, sizeof (*addr), CONNECT_RSP, CMRSP_OK, NULL, 0);
     return ;
 
 err_rsp:
-    err_msg("connect error");
+    fnet_log_err("connection fails");
     response(addr, sizeof (*addr), CONNECT_RSP, CMRSP_ERR, NULL, 0);
     return ;
 }
@@ -173,15 +176,15 @@ static void process_restore(struct sockaddr *addr){
 
     pthread_rwlock_wrlock(&(u->rwlock));
     if(0 == (u->user_state & USER_CONNECTED)){
-        err_msg("user state error: restore but not connect");
+        fnet_log_warn("user state error: restore but not connect");
         goto err_rsp;
     }
     if(0 == (u->user_state & USER_LOGGED)){
-        err_msg("user state error: restore but not login");
+        fnet_log_warn("user state error: restore but not login");
         goto err_rsp;
     }
     if(0 == (u->user_state & USER_CONFIGURED)){
-        err_msg("user state error: restore but not configure");
+        fnet_log_warn("user state error: restore but not configure");
         goto err_rsp;
     }
     u->user_state |= USER_WORKING;
@@ -218,27 +221,32 @@ static void process_config(struct sockaddr *addr, char *cfg_data, int cfg_data_l
     }
 
     if(0 == (u->user_state & USER_CONNECTED)){
-        err_msg("user state error: configuring but not connect");    
+        fnet_log_warn("user state error: configuring but not connect");    
         goto err_rsp;
     }
     if(0 == (u->user_state & USER_LOGGED)){
-        err_msg("user state error: configuring but not login");
+        fnet_log_warn("user state error: configuring but not login");
         goto err_rsp;
     }
 
     if(cfg_data_len <= 1){
-        err_msg("message length error");
+        fnet_log_err("message length error");
         goto err_rsp;
     }
     no_ft = ntohs(*((unsigned short *)cfg_data));
     
     if(no_ft == 0){
-        err_msg("number of feature field error");
+        fnet_log_err("number of feature field error");
         goto err_rsp;
     }
 
     pthread_rwlock_wrlock(&(u->rwlock));
     u->user_msghdr.msg_iov = (struct iovec*) malloc(sizeof(struct iovec) * (no_ft *  2 + 1));
+    if(u->user_msghdr.msg_iov == NULL){
+        fnet_log_err("could not allocate memory for msg_iov");
+        return;
+    }
+    
     u->user_msghdr.msg_iovlen = no_ft * 2 + 1;
     u->user_msghdr.msg_iov[0].iov_base = (char *)malloc(4);
     u->user_msghdr.msg_iov[0].iov_len = 4;
@@ -258,7 +266,7 @@ static void process_config(struct sockaddr *addr, char *cfg_data, int cfg_data_l
         }
         b_count++;
         if((b_count + sizeof no_ft) > cfg_data_len){
-            err_msg("config message error");
+            fnet_log_err("config message error");
             goto err_rsp;
         }
 
@@ -303,6 +311,6 @@ static void response(struct sockaddr *addr, int addr_len, unsigned type, unsigne
 static void send_packet(struct sockaddr *addr, int addr_len, char *buffer, int buf_len){
 
     if(sendto(cmsockfd, buffer, buf_len, 0, addr, addr_len) != (ssize_t)buf_len){
-        err_sys("sendto error");
+        fnet_log_err("sendto error", strerror(errno));
     }
 }

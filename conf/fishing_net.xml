@@ -12,7 +12,7 @@
     <DistributeService address="anyaddr" port="60721"/>
 
     <!--"PcapHander" is used for handle pcap file uploaded from user-->
-    <PcapHandler avaliable="false", auto_handle_directory="../pcaps">
+    <PcapHandler avaliable="false" auto_handle_directory="../pcaps">
         <directory>
             <path></path>
             <!-- process the file with the suffix, others will be ignored -->
@@ -33,11 +33,11 @@
         <!-- configuration file for flow feature data capture -->
         <FlowConfig path="../conf/flowConfig.cfg"/>
 
-        <!--logfile sets the secondary output stsream, that is, the file to
+        <!--logfile sets the secondary output stream, that is, the file to
             which error/warnings/info/debug statements will be sent; if this
             value is "none", then stderr will be used
         -->
-        <Logfile path="/usr/local/var/log/joy.log"/>
+        <Logfile path="../fishingnet.log"/>
 
         <!-- 
             An interface must be specified for live data capture; linux uses
@@ -57,7 +57,7 @@
             verbosity = 4 -> show errors and critical errors
             verbosity = 5 -> show critical errors only
          -->
-        <Verbosity>4</Verbosity>
+        <Verbosity>2</Verbosity>
 
         <!-- Show Configuration -->
 

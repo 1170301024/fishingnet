@@ -5,6 +5,7 @@
 #include    <stdio.h>
 #include    <string.h>
 #include    <unistd.h>
+#include    <errno.h>
 
 #include    "../include/error.h"
 #include    "../include/enjoy.h"
@@ -14,21 +15,23 @@
 #include    "../include/flow.h"
 #include    "../include/const.h"
 #include    "../include/config.h"
+
    
-extern fnet_configuration_t fnet_glb_config;
+extern fnet_configuration_t * fnet_glb_config;
+extern FILE * info;
 extern user_list_t work_user_list;
 
 int dsockfd;
 // the FILE pointer contains a file descriptor for pipe reading
-FILE *fp_input;
+FILE *flow_pipe_in;
 
 void *
 init_distribute_service(void * arg){
     struct sockaddr_in daddr;
-    struct distribute_service_config *dsc = &(fnet_glb_config.distribute_s_cfg);
+    struct distribute_service_config *dsc = &(fnet_glb_config->distribute_s_cfg);
     dsockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if(-1 == dsockfd){
-        err_sys("socket error");
+        fnet_log_err("socket error: ", strerror(errno));
     }
     memset(&daddr, 0, sizeof daddr);
 
@@ -49,14 +52,14 @@ init_distribute_service(void * arg){
     }
     // normal IPv4 address
     else if(inet_pton(AF_INET, dsc->address, &(daddr.sin_addr)) == -1){
-        err_sys("address error");
+        fnet_log_err("address error: ", strerror(errno));
     }
     if(-1 == bind(dsockfd, (struct sockaddr *)&daddr, sizeof daddr)){
-        err_sys("bind error");
+        fnet_log_err("bind error: ", strerror(errno));
         return ;
     }
     
-    fprintf(stdout, "\nDistribution service initialized\n");
+    fnet_log_info("Distribution service initialized");
     distribute();
 }
 
@@ -77,7 +80,6 @@ void distribute(){
     int rc;
 
     while(1){
-        
         if((rc = get_flow_record(&record)) < 0){
             //err_msg("next_record error");
             continue;
@@ -97,10 +99,11 @@ void distribute(){
                 err_msg("length of udp message beyond MAX_UDP_MSG");
                 continue;
             }
-            
-            printf("Send a packet to %s:%d\n", inet_ntoa(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_addr), ntohs(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_port));
+            fnet_log_info("Send a packet to %s:%d\n", inet_ntoa(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_addr), ntohs(((struct sockaddr_in*)(u->user_msghdr.msg_name))->sin_port));
 
             sendmsg(dsockfd, &(u->user_msghdr), 0);
+            u->no_records_send++;
+
     }
     pthread_rwlock_unlock(&(work_user_list.rwlock));
     free_flow_record(&record);
@@ -118,8 +121,8 @@ int get_flow_record(struct flow_record *record){
     int len;
     
     char json_str[65535];
-    while(fgets(json_str, 65535, fp_input) == NULL){
-        clearerr(fp_input);
+    while(fgets(json_str, 65535, flow_pipe_in) == NULL){
+        clearerr(flow_pipe_in);
     }
     
     //read(STDIN_FILENO, json_str, 1023);
@@ -129,13 +132,13 @@ int get_flow_record(struct flow_record *record){
         return -1;
     }
     
-    if(len > 65535){
-        err_msg("string error");
-        return -1;
-    }
     puts(json_str);
 
     json_str[len-1] = '\0';
+
+    if(strcmp(json_str, EXTRACTOR_PCAP_FIN_STR) == 0){
+        exit(0);
+    }
     init_flow_record(record);
     if(json_string2flow_record(record, json_str) < 0){
         return -1;
@@ -166,7 +169,7 @@ int construct_feature_msg(struct user *u, struct flow_record *record){
     
 #ifdef ENJOY_DEBUG
     if(0 == user_features_match(record->fm, u->config->fm)){
-        err_msg("features of user not included in features of flow record");
+        fnet_log_err("features of user not included in features of flow record");
         return -1;
     }
 #endif
@@ -174,7 +177,7 @@ int construct_feature_msg(struct user *u, struct flow_record *record){
     for(int cd=0; cd < NO_FEATURE; cd++){
         if(get_fm(u->config->fm, cd) && get_fm(record->fm, cd)){
             if(record->features[cd].flags != NONEMPTY){
-                err_msg("a not non-empty feature is filled into a feature message");
+                fnet_log_err("a not non-empty feature is filled into a feature message");
                 return -1;
             }
         

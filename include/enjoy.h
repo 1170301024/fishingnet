@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 #define ENJOY_DEBUG
-#define DEBUG_MEASURE_TIME ０
+#define DEBUG_MEASURE_TIME 1
 
 // #define LOCAL_NET_ENV
 #define NO_JOY_BM_ON 22

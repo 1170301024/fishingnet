@@ -50,7 +50,7 @@ free_flow_record(struct flow_record *record){
         return ;
     }
     for (int i=0; i<=NO_FEATURE; i++){
-        if(record->features[1].flags == NONEMPTY){
+        if(record->features[i].flags == NONEMPTY){
             free(record->features[i].name);
             free(record->features[i].value);
         }
